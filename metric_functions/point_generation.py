@@ -90,6 +90,13 @@ def scale_coordinates(pt):
     arg = jnp.argmax(jnp.abs(pt))
     return pt/pt[arg]
 
+def scale_coordinates_product(pt, projective_factors):
+    prods = vmap(lambda x: x+1)(projective_factors)
+    point = list(map(scale_coordinates, jnp.split(pt, jnp.cumsum(prods)[:-1])))
+    point = jnp.concatenate(point)
+    return point
+
+
 def generate_points_calabi_yau(key, projective_factors, k_moduli, pol, m):
     '''
     Geneates a point a Calabi-Yau manifold, given a set of projective factors and defining polynomial.

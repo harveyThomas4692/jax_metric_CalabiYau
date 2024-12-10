@@ -36,6 +36,6 @@ def pullback(pt, projective_factors, poly):
     keep_indices = jit_setdiff1d(jnp.arange(len(pt)),jnp.append(pt_ones, rm_index),size=len(pt)-1-len(pt_ones))
     pb = pb[keep_indices, :]
 
-    return pb
+    return jnp.array(pb)
 
 pullback = jit(pullback,static_argnums=(2,))
