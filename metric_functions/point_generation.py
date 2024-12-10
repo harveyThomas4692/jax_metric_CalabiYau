@@ -67,6 +67,8 @@ def generate_random_lines_projective(key, n, m):
     Returns:
         A list of lambda functions that takes a scalar t and returns a point on the line 
         in projective space.
+    Note:
+        This currently doesn't work with jit, as it reuturns a list of functions.
     """
 
     points = generate_points_projective(key,n,2*m)
@@ -90,7 +92,21 @@ def scale_coordinates(pt):
     arg = jnp.argmax(jnp.abs(pt))
     return pt/pt[arg]
 
+#@jit
 def scale_coordinates_product(pt, projective_factors):
+    """
+    Scales the coordinates of a point based on given projective factors.
+    This function takes a point and a list of projective factors, applies a scaling
+    transformation to the point using these factors, and returns the scaled point.
+    Args:
+        pt (jnp.ndarray): The input point to be scaled. It is expected to be a 1D array.
+        projective_factors (jnp.ndarray): A 1D array of projective factors used for scaling.
+    Returns:
+        jnp.ndarray: The scaled point as a 1D array.
+    Note:
+        This currently doesn't work with jit, as it doesn't support vmap.
+    """
+    
     prods = vmap(lambda x: x+1)(projective_factors)
     point = list(map(scale_coordinates, jnp.split(pt, jnp.cumsum(prods)[:-1])))
     point = jnp.concatenate(point)
