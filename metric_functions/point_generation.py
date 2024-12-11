@@ -111,49 +111,34 @@ def generate_points_projective_product(key, projective_factors, m):
     
     return points
 
-def generate_random_lines_projective(key, n, m):
+@jit
+def compute_line(points, t):
     """
-    Generates a random line in projective space.
-    This function generates two random points in projective space and returns a 
-    lambda function representing a line parameterized by t, where t is a scalar 
-    between 0 and 1. The line is defined as a linear interpolation between the 
-    two points.
+    Computes a point on a line given two points and a parameter t.
     Args:
-        key: A key used for random number generation.
-        n: The dimension of the projective space.
-        m: The number of lines to generate.
+        points (jnp.ndarray): A 2D array containing two points in projective space.
+        t (float): A scalar parameter between 0 and 1.
     Returns:
-        A list of lambda functions that takes a scalar t and returns a point on the line 
-        in projective space.
-    Note:
-        This currently doesn't work with jit, as it reuturns a list of functions.
+        jnp.ndarray: A point on the line defined by the two input points.
     """
 
-    points = generate_points_projective(key,n,2*m)
-    points = points.reshape(m,2,n+1)
-    return [lambda t: (1-t)*points[i,0] + t*points[i,1] for i in range(m)]
+    return (1-t)*points[0] + t*points[1]
 
-def get_line(n):
-    """
-    Generates a parametric line function based on two points.
-    Args:
-        n (list or tuple): A list or tuple containing two points, where each point is a numeric value.
-    Returns:
-        function: A lambda function that represents the parametric line. The function takes a single parameter `t` (0 <= t <= 1) and returns the corresponding point on the line.
-    """
+def __toSolve(x,linePts,pol):
+    p = pol(compute_line(linePts,x[0] + 1j*x[1]))
+    return p.real, p.imag
 
-    return lambda t: (1-t)*n[0] + t*n[1]
+__toSolve = jit(__toSolve,static_argnums=(2))
 
-
-def generate_points_calabi_yau(key, projective_factors, k_moduli, pol, m):
+def generate_points_calabi_yau(key, projective_factors, k_moduli, pol, m,safe_fac = 1.2):
     """
     Generates points on a Calabi-Yau manifold using projective factors and polynomial equations.
     Args:
         key (jax.random.PRNGKey): Random key for generating points.
         projective_factors (list): List of projective factors for the manifold.
-        k_moduli (int): Moduli paramters for the manifold.
         pol (function): Polynomial function defining the Calabi-Yau manifold.
         m (int): Number of points to generate.
+        safe_fac (int): Safety factor for mulitple of number of points to generate.
     Returns:
         jax.numpy.ndarray: Array of generated points on the Calabi-Yau manifold.
     Note:
@@ -163,19 +148,17 @@ def generate_points_calabi_yau(key, projective_factors, k_moduli, pol, m):
         Should consider using using jnp.roots - but this will require some reworking
     """
     
-    pair_points = generate_points_projective_product(key, projective_factors, 2*m).reshape(m,2,sum(projective_factors)+len(projective_factors))
-    lines = [get_line(pair_points[i]) for i in range(m)]
+    pair_points = generate_points_projective_product(key, projective_factors, 2*int(m*safe_fac)).reshape(int(m*safe_fac),2,sum(projective_factors)+len(projective_factors))
     points = []
     i = 0
     while i < m:
-        def toSolve(x):
-            p = pol(lines[i](x[0] + 1j*x[1]))
-            return p.real, p.imag
-        sols = root(toSolve, [0., 0.],tol=1e-5)
-        pt = lines[i](sols.x[0] + 1.j*sols.x[1])
+        sols = root((lambda x: __toSolve(x,pair_points[i],pol)), [0., 0.],tol=1e-5)
+        pt = compute_line(pair_points[i],sols.x[0] + 1.j*sols.x[1])
         pt = scale_coordinates_product(pt, projective_factors)
         if jnp.abs(pol(pt)) < 1e-5:
             points.append(pt)
+        else:
+            m+=1
         i += 1
 
     return jnp.array(points)
