@@ -4,7 +4,7 @@ from jax import jit
 
 jit_setdiff1d = jit(jnp.setdiff1d, static_argnames=['size'])
 
-def pullback(pt, projective_factors, poly):
+def __pullback(pt, projective_factors, poly):
     """
     Computes the pullback matrix for a given point, and polynomial.
     Args:
@@ -38,4 +38,16 @@ def pullback(pt, projective_factors, poly):
 
     return jnp.array(pb)
 
-pullback = jit(pullback,static_argnums=(2,))
+__pullback = jit(__pullback,static_argnums=(2,))
+
+def get_pullback(pts, projective_factors, poly):
+    """
+    Computes the pullback matrix for a given set of points, and polynomial.
+    Args:
+        pts (array-like): The points at which to evaluate the pullback.
+        projective_factors (list): A list of integers representing the projective factors of the Calabi-Yau manifold.
+        poly (function): The polynomial function for which the gradient is computed.
+    Returns:
+        jnp.ndarray: The pullback matrix.
+    """
+    return jax.vmap(__pullback, in_axes=(0, None, None))(pts, projective_factors, poly)

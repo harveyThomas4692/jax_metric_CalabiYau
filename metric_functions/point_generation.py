@@ -130,7 +130,7 @@ def __toSolve(x,linePts,pol):
 
 __toSolve = jit(__toSolve,static_argnums=(2))
 
-def generate_points_calabi_yau(key, projective_factors, k_moduli, pol, m,safe_fac = 1.2):
+def generate_points_calabi_yau(key, projective_factors, pol, m,safe_fac = 1.2):
     """
     Generates points on a Calabi-Yau manifold using projective factors and polynomial equations.
     Args:
@@ -160,7 +160,8 @@ def generate_points_calabi_yau(key, projective_factors, k_moduli, pol, m,safe_fa
         else:
             m+=1
         i += 1
-
+    if len(points) < m:
+        print("Warning: Not all points generated")
     return jnp.array(points)
 
 #generate_points_calabi_yau = jit(generate_points_calabi_yau, static_argnums=(0,3))
