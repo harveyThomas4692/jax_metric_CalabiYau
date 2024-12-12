@@ -27,7 +27,7 @@ def get_2form_FS_proj_prod(projective_factors, k_moduli, pts):
     """
     Computes the 2-form Fubini-Study direct product metric for given projective factors, moduli, and points.
     Args:
-        projective_factors (list of int): List of projective factors for each block.
+        projective_factors (tuple of int): List of projective factors for each block.
         k_moduli (list of float): List of moduli corresponding to each projective factor.
         pts (array-like): Array of points at which the metric is evaluated.
     Returns:
@@ -45,6 +45,8 @@ def get_2form_FS_proj_prod(projective_factors, k_moduli, pts):
         min += factor +1
 
     return metric
+
+get_2form_FS_proj_prod = jit(get_2form_FS_proj_prod, static_argnums=(0,))
 
 def get_ref_metric(projective_facotrs,k_moduli, poly, pts):
     """
