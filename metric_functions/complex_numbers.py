@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-from jax import grad, vmap, jit
+from jax import jit
 
 @jit
 def complex_to_real(z):

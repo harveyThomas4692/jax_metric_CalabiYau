@@ -1,8 +1,9 @@
 import jax
 import jax.numpy as jnp
-from jax import jit, vmap, grad
+from jax import jit, vmap
 from metric_functions.pullback import get_pullback
-from metric_functions.complex_numbers import manual_det_3x3,grad_del_delBar
+from metric_functions.complex_numbers import manual_det_3x3, grad_del_delBar
+from metric_functions.training import apply_model
 
 def get_2form_FS_proj(n,pts):
     """
@@ -189,3 +190,36 @@ def kappa(projective_factors,k_moduli, poly, pts):
     return jnp.sum(Wfs)/jnp.sum(cy_vol)
 
 kappa = jit(kappa, static_argnums=(0,2,))
+
+def cy_metric_amb(model, params,projective_factors,k_moduli, pts):
+    """
+    Computes the Calabi-Yau metric with an ambiguity term.
+    Args:
+        model: The model used to compute the metric.
+        params: Parameters for the model.
+        projective_factors (tuple): Tuple of projective factors.
+        k_moduli (array-like): Array of Kähler moduli.
+        pts (array-like): Points at which to evaluate the metric.
+    Returns:
+        array-like: The computed Calabi-Yau metric with the ambiguity term.
+    """
+    
+    phi = lambda pt: apply_model(model,params,pt)
+    
+    gradDelDelBarPhi = vmap(grad_del_delBar,in_axes=(None,0,))(phi,pts)
+
+    gFS = get_2form_FS_proj_prod(projective_factors,k_moduli, pts)
+
+    gAmb = gFS + gradDelDelBarPhi
+
+    return gAmb
+
+cy_metric_amb = jit(cy_metric_amb, static_argnums=(0,2,))
+
+def cy_metric(model, params,projective_factors,k_moduli, poly, pts):
+    gAmb = cy_metric_amb(model, params,projective_factors,k_moduli, pts)
+    pullbacks = get_pullback(pts,projective_factors,poly)
+
+    return jnp.einsum('aij,ajk,alk->ail',pullbacks,gAmb,jnp.conjugate(pullbacks))
+
+cy_metric = jit(cy_metric, static_argnums=(0,2,4,))
