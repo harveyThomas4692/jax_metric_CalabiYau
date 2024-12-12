@@ -123,9 +123,9 @@ def aux_weight(projective_factors,k_moduli, poly, pts):
     Wfs = jnp.abs(vmap(manual_det_3x3)(gCY))
     return Wfs
 
-getAuxWeight_jit = jax.jit(aux_weight, static_argnums=(0,2,))
+aux_weight = jax.jit(aux_weight, static_argnums=(0,2,))
 
-def get_mass(projective_factors,k_moduli, poly, pts):
+def mass(projective_factors,k_moduli, poly, pts):
     """
     Calculate the masses for numer integration given the projective factors, 
     Kähler moduli, polynomial, and points.
@@ -142,4 +142,54 @@ def get_mass(projective_factors,k_moduli, poly, pts):
     cy_vol_form_pts = cy_vol_form(projective_factors,poly,pts)
     return cy_vol_form_pts/Wfs
 
-get_mass = jit(get_mass, static_argnums=(0,2,))
+mass = jit(mass, static_argnums=(0,2,))
+
+def normalised_mass(projective_factors,k_moduli, poly, pts):
+    """
+    Compute the normalized mass for given projective factors, Kähler moduli, polynomial, and points.
+    This function calculates the masses using the provided projective factors, Kähler moduli, polynomial, 
+    and points, then normalizes these masses by the total volume form of the Calabi-Yau manifold.
+    Args:
+        projective_factors (tuple): The projective factors used in the computation.
+        k_moduli (array-like): The Kähler moduli used in the computation.
+        poly (array-like): The polynomial defining the Calabi-Yau manifold.
+        pts (array-like): The points at which the computation is performed.
+    Returns:
+        array-like: The normalized masses.
+    Note:
+        This is computing what are called auxiliary weights in the CY metric paper.
+    """
+
+    masses = mass(projective_factors,k_moduli,poly,pts)
+    cy_vol = cy_vol_form(projective_factors,poly,pts)
+
+    mTot = jnp.sum(masses)
+    omgTot = jnp.sum(cy_vol)
+
+    return masses * omgTot / mTot
+
+normalised_mass = jit(normalised_mass, static_argnums=(0,2,))
+
+def kappa(projective_factors,k_moduli, poly, pts):
+    def kappa(projective_factors, k_moduli, poly, pts):
+        """
+        Computes the kappa value for the Monge-Ampère (MA) loss.
+
+        Parameters:
+        projective_factors (tuple): The projective factors used in the computation.
+        k_moduli (array-like): The Kähler moduli parameters.
+        poly (array-like): The polynomial coefficients.
+        pts (array-like): The points at which the computation is performed.
+
+        Returns:
+        float: The computed kappa value, which is the ratio of the sum of auxiliary weights to the sum of the Calabi-Yau volume form.
+        """
+    '''
+        Computes kappa for the MA loss
+    '''
+    cy_vol = cy_vol_form(projective_factors,poly,pts)
+    Wfs = aux_weight(projective_factors,k_moduli,poly,pts)
+
+    return jnp.sum(Wfs)/jnp.sum(cy_vol)
+
+kappa = jit(kappa, static_argnums=(0,2,))

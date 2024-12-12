@@ -158,6 +158,8 @@ def generate_points_calabi_yau(key, projective_factors, pol, m,safe_fac = 1.2):
     i = 0
     m_orig = m
     while i < m:
+        if(i % jnp.round(m/10) == 0 or i == m-1):
+            print(f"{i+1}/{m}| Extra needed so far: {m-m_orig}")
         sols = root((lambda x: __toSolve(x,pair_points[i],pol)), [0., 0.],tol=1e-5)
         pt = compute_line(pair_points[i],sols.x[0] + 1.j*sols.x[1])
         pt = scale_coordinates_product(pt, projective_factors)
