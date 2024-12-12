@@ -171,22 +171,18 @@ def normalised_mass(projective_factors,k_moduli, poly, pts):
 normalised_mass = jit(normalised_mass, static_argnums=(0,2,))
 
 def kappa(projective_factors,k_moduli, poly, pts):
-    def kappa(projective_factors, k_moduli, poly, pts):
-        """
-        Computes the kappa value for the Monge-Ampère (MA) loss.
+    """
+    Computes the kappa value for the Monge-Ampère (MA) loss.
 
-        Parameters:
-        projective_factors (tuple): The projective factors used in the computation.
-        k_moduli (array-like): The Kähler moduli parameters.
-        poly (array-like): The polynomial coefficients.
-        pts (array-like): The points at which the computation is performed.
+    Parameters:
+    projective_factors (tuple): The projective factors used in the computation.
+    k_moduli (array-like): The Kähler moduli parameters.
+    poly (array-like): The polynomial coefficients.
+    pts (array-like): The points at which the computation is performed.
 
-        Returns:
-        float: The computed kappa value, which is the ratio of the sum of auxiliary weights to the sum of the Calabi-Yau volume form.
-        """
-    '''
-        Computes kappa for the MA loss
-    '''
+    Returns:
+    float: The computed kappa value, which is the ratio of the sum of auxiliary weights to the sum of the Calabi-Yau volume form.
+    """
     cy_vol = cy_vol_form(projective_factors,poly,pts)
     Wfs = aux_weight(projective_factors,k_moduli,poly,pts)
 
