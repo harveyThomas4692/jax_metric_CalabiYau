@@ -9,7 +9,7 @@ def __pullback(pt, projective_factors, poly):
     Computes the pullback matrix for a given point, and polynomial.
     Args:
         pt (array-like): The point at which to evaluate the pullback.
-        projective_factors (list): A list of integers representing the projective factors of the Calabi-Yau manifold.
+        projective_factors (tuple): A list of integers representing the projective factors of the Calabi-Yau manifold.
         poly (function): The polynomial function for which the gradient is computed.
     Returns:
         jnp.ndarray: The pullback matrix.
@@ -42,7 +42,7 @@ def get_pullback(pts, projective_factors, poly):
     Computes the pullback matrix for a given set of points, and polynomial.
     Args:
         pts (array-like): The points at which to evaluate the pullback.
-        projective_factors (list): A list of integers representing the projective factors of the Calabi-Yau manifold.
+        projective_factors (tuple): A list of integers representing the projective factors of the Calabi-Yau manifold.
         poly (function): The polynomial function for which the gradient is computed.
     Returns:
         jnp.ndarray: The pullback matrix.
