@@ -44,7 +44,6 @@ def scale_coordinates(pt):
     arg = jnp.argmax(jnp.abs(pt))
     return pt/pt[arg]
 
-#@jit
 def scale_coordinates_product(pt, projective_factors):
     """
     Scales the coordinates of a point based on given projective factors.
@@ -52,20 +51,20 @@ def scale_coordinates_product(pt, projective_factors):
     transformation to the point using these factors, and returns the scaled point.
     Args:
         pt (jnp.ndarray): The input point to be scaled. It is expected to be a 1D array.
-        projective_factors (list): A list of projective factors used for scaling.
+        projective_factors (tuple): A list of projective factors used for scaling.
     Returns:
         jnp.ndarray: The scaled point as a 1D array.
-    Note:
-        This currently doesn't work with jit, as it doesn't support vmap.
     """
-    
-    prods = jnp.array(projective_factors)+1
-    inds = jnp.split(pt, jnp.cumsum(prods)[:-1])
-    point = jnp.zeros(sum(projective_factors)+len(projective_factors))
-    
-    point = list(map(scale_coordinates, jnp.split(pt, jnp.cumsum(prods)[:-1])))
-    point = jnp.concatenate(point)
-    return point
+    # Calculate cumulative sum of splits for splitting the point array
+    splits2 = jnp.cumsum(jnp.array(projective_factors)+1)[:-1]
+    #prods = jnp.array(projective_factors)+1
+    splits_pt = jnp.split(pt, splits2)
+    scaled = []
+    for i in range(len(splits_pt)):
+        scaled.append(scale_coordinates(splits_pt[i]))
+    return jnp.concatenate(scaled)
+
+scale_coordinates_product = jit(scale_coordinates_product,static_argnums=(1))
 
 def generate_points_projective(key,n,m):
     """
@@ -94,25 +93,28 @@ def generate_points_projective(key,n,m):
 
 generate_points_projective = jit(generate_points_projective,static_argnums=(1,2))
 
-#@jit
 def generate_points_projective_product(key, projective_factors, m):
     """
-    Generate points in a product of projective spaces.
+    Generate points in a product of projective spaces, with fixed projective factors for jit compatibility.
     Args:
         key (jax.random.PRNGKey): A random key used for generating random numbers.
-        projective_factors (list): A list of integers where each integer represents the dimension of a projective space.
+        projective_factors (tuple): A tuple of integers where each integer represents 
+            the dimension of a projective space.
         m (int): The number of points to generate in each projective space.
     Returns:
         jnp.ndarray: An array of shape (m, sum(projective_factors)) containing the generated points.
     Note:
-        This function currently doesn't have jit due to for loops.
+        This version is jittable since projective_factors is a static argument.
     """
-    
-    keys = jax.random.split(key,len(projective_factors))
-    points = [generate_points_projective(keys[i], projective_factors[i], m) for i in range(len(projective_factors))]
+    keys = jax.random.split(key, len(projective_factors))
+    points = []
+    for i in range(len(projective_factors)):
+        points_i = generate_points_projective(keys[i], projective_factors[i], m)
+        points.append(points_i)
     points = jnp.concatenate(points, axis=1)
-    
     return points
+
+generate_points_projective_product = jit(generate_points_projective_product, static_argnums=(1,2))
 
 @jit
 def compute_line(points, t):
@@ -138,7 +140,7 @@ def generate_points_calabi_yau(key, projective_factors, pol, m,safe_fac = 1.2):
     Generates points on a Calabi-Yau manifold using projective factors and polynomial equations.
     Args:
         key (jax.random.PRNGKey): Random key for generating points.
-        projective_factors (list): List of projective factors for the manifold.
+        projective_factors (tuple): List of projective factors for the manifold.
         pol (function): Polynomial function defining the Calabi-Yau manifold.
         m (int): Number of points to generate.
         safe_fac (int): Safety factor for mulitple of number of points to generate.
@@ -154,6 +156,7 @@ def generate_points_calabi_yau(key, projective_factors, pol, m,safe_fac = 1.2):
     pair_points = generate_points_projective_product(key, projective_factors, 2*int(m*safe_fac)).reshape(int(m*safe_fac),2,sum(projective_factors)+len(projective_factors))
     points = []
     i = 0
+    m_orig = m
     while i < m:
         sols = root((lambda x: __toSolve(x,pair_points[i],pol)), [0., 0.],tol=1e-5)
         pt = compute_line(pair_points[i],sols.x[0] + 1.j*sols.x[1])
@@ -163,7 +166,7 @@ def generate_points_calabi_yau(key, projective_factors, pol, m,safe_fac = 1.2):
         else:
             m+=1
         i += 1
-    if len(points) < m:
+    if len(points) < m_orig:
         print("Warning: Not all points generated")
     return jnp.array(points)
 
