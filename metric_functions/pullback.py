@@ -19,12 +19,10 @@ def __pullback(pt, projective_factors, poly):
     dP = dPoly(pt)
     scales = len(projective_factors)
     pt_ones = jnp.argsort(jnp.abs(pt))[-scales:]
-    args = jnp.argsort(jnp.abs(dP))
+    dP_compare = jnp.abs(dP).at[pt_ones].set(jnp.zeros(len(pt_ones)))
 
     # Delete the specified rows
-    rm_index = jit_setdiff1d(args, pt_ones,size=1)[0]
-
-
+    rm_index = jnp.argsort(jnp.abs(dP_compare))[-1]
     chain = jnp.outer(dP, 1./dP)  # This has indices pb_b^a = dp^a / dp_b
 
     # Update the desired column with zeros and ones
@@ -38,7 +36,7 @@ def __pullback(pt, projective_factors, poly):
 
     return jnp.array(pb)
 
-__pullback = jit(__pullback,static_argnums=(2,))
+#__pullback = jit(__pullback,static_argnums=(2,))
 
 def get_pullback(pts, projective_factors, poly):
     """
@@ -51,3 +49,5 @@ def get_pullback(pts, projective_factors, poly):
         jnp.ndarray: The pullback matrix.
     """
     return jax.vmap(__pullback, in_axes=(0, None, None))(pts, projective_factors, poly)
+
+#get_pullback = jit(get_pullback, static_argnums=(2))

@@ -2,17 +2,18 @@ import jax
 import jax.numpy as jnp
 from jax import jit, vmap, grad
 from metric_functions.pullback import get_pullback
+from metric_functions.complex_numbers import manual_det_3x3,grad_del_delBar
 
 def get_2form_FS_proj(n,pts):
     """
-    Compute the Fubini-Study projection 2-form for a set of points.
-    This function calculates the Fubini-Study projection 2-form for each point in the input array `pts`.
+    Compute the Fubini-Study 2-form for a set of points.
+    This function calculates the Fubini-Study 2-form for each point in the input array `pts`.
     The Fubini-Study metric is a Hermitian metric on complex projective space.
     Args:
         n (int): The dimension of the complex projective space.
         pts (array-like): An array of points in complex projective space. Each point is expected to be a complex vector of length `n+1`.
     Returns:
-        jax.numpy.ndarray: An array of Fubini-Study projection 2-forms corresponding to each input point.
+        jax.numpy.ndarray: An array of Fubini-Study 2-forms corresponding to each input point.
     """
 
     g = vmap(lambda pt: (jnp.identity(n+1)*(jnp.linalg.norm(pt)**2.) - jnp.outer(jnp.conjugate(pt),pt))/(jnp.linalg.norm(pt)**4.))(pts)
@@ -24,7 +25,7 @@ get_2form_FS_proj = jit(get_2form_FS_proj, static_argnums=(0,))
 
 def get_2form_FS_proj_prod(projective_factors, k_moduli, pts):
     """
-    Computes the 2-form Fubini-Study projection product metric for given projective factors, moduli, and points.
+    Computes the 2-form Fubini-Study direct product metric for given projective factors, moduli, and points.
     Args:
         projective_factors (list of int): List of projective factors for each block.
         k_moduli (list of float): List of moduli corresponding to each projective factor.
@@ -51,16 +52,17 @@ def get_ref_metric(projective_facotrs,k_moduli, poly, pts):
     This function calculates the reference metric by first obtaining the pullbacks
     and the Fubini-Study metrics, and then contracting them using Einstein summation.
     Parameters:
-    projective_facotrs (array-like): The projective factors.
-    k_moduli (array-like): The Kähler moduli.
-    poly (array-like): The polynomial coefficients.
-    pts (array-like): The points at which to evaluate the metric.
+        projective_facotrs (array-like): The projective factors.
+        k_moduli (array-like): The Kähler moduli.
+        poly (array-like): The polynomial coefficients.
+        pts (array-like): The points at which to evaluate the metric.
     Returns:
-    jnp.ndarray: The computed reference metric.
-    Note: This function cannot be JIT-compiled due to the use of `get_2form_FS_proj_prod`.
+        jnp.ndarray: The computed reference metric.
+    Note: 
+        This function cannot be JIT-compiled due to the use of `get_2form_FS_proj_prod`.
     """
     
     pullbacks = get_pullback(pts,projective_facotrs,poly)
     fs_metrics = get_2form_FS_proj_prod(projective_facotrs,k_moduli,pts)
 
-    return jnp.einsum('ijk,ikl,ibk->ijb',pullbacks,fs_metrics,pullbacks.conj())
+    return jnp.einsum('ijk,ikl,ibk->ijb',jnp.conjugate(pullbacks),fs_metrics,pullbacks)

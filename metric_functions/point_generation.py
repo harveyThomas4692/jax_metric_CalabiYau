@@ -60,6 +60,9 @@ def scale_coordinates_product(pt, projective_factors):
     """
     
     prods = jnp.array(projective_factors)+1
+    inds = jnp.split(pt, jnp.cumsum(prods)[:-1])
+    point = jnp.zeros(sum(projective_factors)+len(projective_factors))
+    
     point = list(map(scale_coordinates, jnp.split(pt, jnp.cumsum(prods)[:-1])))
     point = jnp.concatenate(point)
     return point
