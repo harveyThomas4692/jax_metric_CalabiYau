@@ -218,9 +218,76 @@ def cy_metric_amb(model, params,projective_factors,k_moduli, pts):
 cy_metric_amb = jit(cy_metric_amb, static_argnums=(0,2,))
 
 def cy_metric(model, params,projective_factors,k_moduli, poly, pts):
+    """
+    Computes the Calabi-Yau metric.
+    Args:
+        model: The model used for the metric computation.
+        params: Parameters for the model.
+        projective_factors (tuple): Factors related to the projective space.
+        k_moduli: Moduli parameters.
+        poly: Polynomial defining the Calabi-Yau manifold.
+        pts: Points at which the metric is evaluated.
+    Returns:
+        A tensor representing the Calabi-Yau metric at the given points.
+    """
+
     gAmb = cy_metric_amb(model, params,projective_factors,k_moduli, pts)
     pullbacks = get_pullback(pts,projective_factors,poly)
 
     return jnp.einsum('aij,ajk,alk->ail',pullbacks,gAmb,jnp.conjugate(pullbacks))
 
 cy_metric = jit(cy_metric, static_argnums=(0,2,4,))
+
+def ricci_curvature_amb(model, params, projective_factors, k_moduli, pts):
+    """
+    Calculate the Ricci curvature for a given model and parameters.
+    Parameters:
+    model : object
+        The model representing the Calabi-Yau manifold.
+    params : array-like
+        Parameters for the model.
+    projective_factors (tuple) : array-like
+        Projective factors for the coordinates.
+    k_moduli : array-like
+        Kähler moduli parameters.
+    pts : array-like
+        Points at which to evaluate the Ricci curvature.
+    Returns:
+    array-like
+        The Ricci curvature evaluated at the given points.
+    Note: 
+        This is very slow right now. It is not used in the training process.
+        I'm not sure why it is so slow...
+    """
+    def detMet(pt):
+        g = cy_metric_amb(model, params,projective_factors,k_moduli, jnp.array([pt]))[0]
+        return jnp.abs(manual_det_3x3(g))
+    
+    curv = vmap(grad_del_delBar,in_axes=(None,0,))(detMet,pts)
+
+    return curv
+
+ricci_curvature_amb = jit(ricci_curvature_amb, static_argnums=(0,2,))
+
+def ricci_curvature(model, params,projective_factors,k_moduli, poly, pts):
+    """
+    Calculate the Ricci curvature for a given model and parameters.
+    Args:
+        model: The model used for the calculation.
+        params: Parameters of the model.
+        projective_factors (tuple): Factors related to the projective space.
+        k_moduli: Moduli parameters.
+        poly: Polynomial defining the Calabi-Yau manifold.
+        pts: Points at which to evaluate the curvature.
+    Returns:
+        The Ricci curvature tensor at the given points.
+    Note:
+        Thi sis currently stupidly slow, as it uses ricci_curvature_amb...
+    """
+
+    curv = ricci_curvature_amb(model, params,projective_factors,k_moduli, pts)
+    pullbacks = get_pullback(pts,projective_factors,poly)
+
+    return jnp.einsum('aij,ajk,alk->ail',pullbacks,curv,jnp.conjugate(pullbacks))
+
+ricci_curvature = jit(ricci_curvature, static_argnums=(0,2,4,))
