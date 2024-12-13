@@ -39,7 +39,7 @@ def get_2form_FS_proj_prod(projective_factors, k_moduli, pts):
     min = 0
     for i in range(len(projective_factors)):
         factor = projective_factors[i]
-        block = get_2form_FS_proj(projective_factors[i],pts)
+        block = get_2form_FS_proj(projective_factors[i],pts[:,min:min+factor+1])
         metric = k_moduli[i]*metric.at[:,min:min+factor+1, min:min+factor+1].set(block)
         min += factor +1
 
@@ -84,6 +84,7 @@ def __cy_vol_form_point(projective_factors,poly,pt):
     dP_compare = jnp.abs(dP).at[pt_ones].set(jnp.zeros(len(pt_ones)))
     # Delete the specified rows
     rm_index = jnp.argsort(jnp.abs(dP_compare))[-1]
+
     dpRed = dP[rm_index]
     Womg = 1./jnp.abs(dpRed)**2.
     return Womg
@@ -121,8 +122,8 @@ def aux_weight(projective_factors,k_moduli, poly, pts):
     """
 
     gCY = get_ref_metric(projective_factors,k_moduli,poly,pts)
-    Wfs = jnp.abs(vmap(manual_det_3x3)(gCY))
-    return Wfs
+    dets = jnp.abs(vmap(manual_det_3x3)(gCY))
+    return dets
 
 aux_weight = jax.jit(aux_weight, static_argnums=(0,2,))
 
@@ -139,9 +140,9 @@ def mass(projective_factors,k_moduli, poly, pts):
         float: The mass of the Calabi-Yau manifold at the given points.
     """
 
-    Wfs = aux_weight(projective_factors,k_moduli,poly,pts)
+    weights = aux_weight(projective_factors,k_moduli,poly,pts)
     cy_vol_form_pts = cy_vol_form(projective_factors,poly,pts)
-    return cy_vol_form_pts/Wfs
+    return cy_vol_form_pts/weights
 
 mass = jit(mass, static_argnums=(0,2,))
 

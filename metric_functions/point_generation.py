@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import jax
 from jax import jit, vmap
 from scipy.optimize import root
+import numpy as np
 
 def generate_points_sphere(key,n,m):
     """
@@ -56,7 +57,7 @@ def scale_coordinates_product(pt, projective_factors):
         jnp.ndarray: The scaled point as a 1D array.
     """
     # Calculate cumulative sum of splits for splitting the point array
-    splits2 = jnp.cumsum(jnp.array(projective_factors)+1)[:-1]
+    splits2 = np.cumsum(np.array(projective_factors)+1)[:-1]
     #prods = jnp.array(projective_factors)+1
     splits_pt = jnp.split(pt, splits2)
     scaled = []
@@ -64,7 +65,7 @@ def scale_coordinates_product(pt, projective_factors):
         scaled.append(scale_coordinates(splits_pt[i]))
     return jnp.concatenate(scaled)
 
-scale_coordinates_product = jit(scale_coordinates_product,static_argnums=(1))
+scale_coordinates_product = jit(scale_coordinates_product,static_argnums=(1,))
 
 def generate_points_projective(key,n,m):
     """
@@ -153,7 +154,8 @@ def generate_points_calabi_yau(key, projective_factors, pol, m,safe_fac = 1.2):
         Should consider using using jnp.roots - but this will require some reworking
     """
     
-    pair_points = generate_points_projective_product(key, projective_factors, 2*int(m*safe_fac)).reshape(int(m*safe_fac),2,sum(projective_factors)+len(projective_factors))
+    pair_points = generate_points_projective_product(key, projective_factors, 2*int(m*safe_fac))
+    pair_points = pair_points.reshape(int(m*safe_fac),2,sum(projective_factors)+len(projective_factors))
     points = []
     i = 0
     m_orig = m
