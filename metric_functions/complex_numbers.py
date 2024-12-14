@@ -54,6 +54,23 @@ def grad_del(func, z):
 
 grad_del = jit(grad_del, static_argnums=(0,))
 
+def grad_del_real(func,X):
+    """
+    Computes the gradient of a real-valued function with respect to the real part of a complex variable.
+    Args:
+        func (callable): A function that takes a complex variable and returns a real value.
+        X (array-like): A 2-element array representing the real and imaginary parts of the complex variable.
+    Returns:
+        jnp.ndarray: A 2-element array containing the gradient of the function with respect to the real part of the complex variable.
+    """
+    
+    #x,y = X, for z = x+iy
+    dFx = jax.jacfwd(func)(X)
+
+    return jnp.array([(dFx[0,0] + dFx[1,1]), -(dFx[0,1] - dFx[1,0])])/2.
+
+#grad_del_real = jit(grad_del_real, static_argnums=(0,))
+
 def grad_delBar(func, z):
     """
     Computes the gradient of a given complex-valued function with respect to the conjugate of a complex variable.
@@ -80,6 +97,24 @@ def grad_delBar(func, z):
 
 grad_delBar = jit(grad_delBar, static_argnums=(0,))
 
+def grad_delBar_real(func,X):
+    """
+    Computes the gradient of the real part of the function with respect to the complex conjugate variable.
+    Parameters:
+    func (callable): The function for which the gradient is to be computed. It should take a single argument.
+    X (array-like): The input array representing the complex variable z = x + iy, where X = [x, y].
+    Returns:
+    jnp.ndarray: An array containing the computed gradient components.
+    """
+
+    #x,y = X, for z = x+iy
+
+    dFx = jax.jacfwd(func)(X)
+
+    return jnp.array([(dFx[0,0] - dFx[1,1]), (dFx[0,1] + dFx[1,0])])/2.
+
+grad_delBar_real = jit(grad_delBar_real, static_argnums=(0,))
+
 def grad_del_delBar(func, z):
     """
     Computes the matrix delDelBar(func).
@@ -102,6 +137,25 @@ def grad_del_delBar(func, z):
     return delDelBar
 
 grad_del_delBar = jit(grad_del_delBar, static_argnums=(0,))
+
+def grad_del_delBar_real(func, X):
+    """
+    Computes the matrix delDelBar(func) for a real-valued function.
+    Parameters:
+    func (callable): The function for which the matrix is to be computed.
+    X (array-like): The input array representing the complex variable z = x + iy, where X = [x, y].
+    Returns:
+    jnp.ndarray: The matrix resulting from the delDelBar operation on the function at point z.
+    """
+    delBarFunc = lambda pt: grad_delBar_real(func, pt)
+
+    def localDel(func, pt):
+        dFx = jax.jacrev(func)(pt)
+        return jnp.array([(dFx[0,:,0] + dFx[1,:,1]), (dFx[0,:,1] - dFx[1,:,0])])/2.
+
+    delDelBar = localDel(delBarFunc, X)
+
+    return delDelBar
 
 @jax.jit
 def manual_det_3x3(M):

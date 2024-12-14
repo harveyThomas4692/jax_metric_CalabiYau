@@ -2,8 +2,8 @@ import jax
 import jax.numpy as jnp
 from jax import jit, vmap
 from metric_functions.pullback import get_pullback
-from metric_functions.complex_numbers import manual_det_3x3, grad_del_delBar
-from metric_functions.training import apply_model
+from metric_functions.complex_numbers import manual_det_3x3, grad_del_delBar,grad_del_delBar_real, complex_to_real, real_to_complex
+from metric_functions.training import apply_model, apply_model_real
 
 def get_2form_FS_proj(n,pts):
     """
@@ -206,8 +206,11 @@ def cy_metric_amb(model, params,projective_factors,k_moduli, pts):
     """
     
     phi = lambda pt: apply_model(model,params,pt)
+
+    #points = vmap(complex_to_real)(pts)
     
     gradDelDelBarPhi = vmap(grad_del_delBar,in_axes=(None,0,))(phi,pts)
+
 
     gFS = get_2form_FS_proj_prod(projective_factors,k_moduli, pts)
 
@@ -215,7 +218,7 @@ def cy_metric_amb(model, params,projective_factors,k_moduli, pts):
 
     return gAmb
 
-cy_metric_amb = jit(cy_metric_amb, static_argnums=(0,2,))
+#cy_metric_amb = jit(cy_metric_amb, static_argnums=(0,2,))
 
 def cy_metric(model, params,projective_factors,k_moduli, poly, pts):
     """
@@ -282,7 +285,7 @@ def ricci_curvature(model, params,projective_factors,k_moduli, poly, pts):
     Returns:
         The Ricci curvature tensor at the given points.
     Note:
-        Thi sis currently stupidly slow, as it uses ricci_curvature_amb...
+        This is currently stupidly slow, as it uses ricci_curvature_amb...
     """
 
     curv = ricci_curvature_amb(model, params,projective_factors,k_moduli, pts)
