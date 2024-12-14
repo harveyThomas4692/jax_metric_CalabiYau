@@ -259,11 +259,11 @@ def ricci_curvature_amb(model, params, projective_factors, k_moduli, pts):
         This is very slow right now. It is not used in the training process.
         I'm not sure why it is so slow...
     """
-    def detMet(pt):
+    def log_det_met(pt):
         g = cy_metric_amb(model, params,projective_factors,k_moduli, jnp.array([pt]))[0]
         return jnp.abs(manual_det_3x3(g))
     
-    curv = vmap(grad_del_delBar,in_axes=(None,0,))(detMet,pts)
+    curv = vmap(grad_del_delBar,in_axes=(None,0,))(log_det_met,pts)
 
     return curv
 

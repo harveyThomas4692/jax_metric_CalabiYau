@@ -38,7 +38,7 @@ class FuncQuintic(nn.Module):
     x = self.dense3(x)
     x = x**2.
     x = self.dense4(x)
-    return jnp.log(jnp.abs(x[0]))
+    return jnp.log(jnp.abs(x.squeeze()))
   
   # Define the model
 class FuncTQ(nn.Module):
@@ -99,4 +99,4 @@ class FuncTQ(nn.Module):
     x = self.dense3(x)
     x = x**2.
     x = self.dense4(x)
-    return jnp.log(jnp.abs(x[0]))
+    return jnp.log(jnp.abs(x.squeeze()))
