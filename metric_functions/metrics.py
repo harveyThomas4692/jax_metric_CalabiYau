@@ -265,7 +265,7 @@ def cy_metric(model, params,projective_factors,k_moduli, poly, pts):
 
 cy_metric = jit(cy_metric, static_argnums=(0,2,4,))
 
-def ricci_curvature_amb_real(model, params, projective_factors, k_moduli, pts):
+def ricci_curvature_amb_real(model, params, projective_factors, k_moduli, poly, pts):
     """
     Calculate the Ricci curvature for a given model and parameters.
     Parameters:
@@ -286,16 +286,19 @@ def ricci_curvature_amb_real(model, params, projective_factors, k_moduli, pts):
         This is very memory intensive when it is first used
     """
     def log_det_met(pt):
-        g = cy_metric_amb_real(model, params,projective_factors,k_moduli, jnp.array([pt]))[0]
-        return jnp.abs(manual_det_3x3(g))
+        point = jnp.array([real_to_complex(pt)])
+        g = cy_metric(model, params, projective_factors ,k_moduli, poly, point)[0]
+        #print(complex_to_real(jnp.log(jnp.abs(manual_det_3x3(g)))))
+        return complex_to_real(jnp.log(jnp.abs(manual_det_3x3(g))))
+        #return jnp.log(jnp.abs(jnp.linalg.det(g)))  
     
     curv = vmap(grad_del_delBar_real,in_axes=(None,0,))(log_det_met,pts)
 
     return curv
 
-ricci_curvature_amb_real = jit(ricci_curvature_amb_real, static_argnums=(0,2,))
+ricci_curvature_amb_real = jit(ricci_curvature_amb_real, static_argnums=(0,2,4,))
 
-def ricci_curvature_amb(model, params, projective_factors, k_moduli, pts):
+def ricci_curvature_amb(model, params, projective_factors, k_moduli, poly, pts):
     """
     Calculate the Ricci curvature for a given model and parameters.
     Parameters:
@@ -316,11 +319,11 @@ def ricci_curvature_amb(model, params, projective_factors, k_moduli, pts):
         This is very memory intesisive when it is first used
     """
     points = vmap(complex_to_real)(pts)
-    curv = ricci_curvature_amb_real(model, params, projective_factors, k_moduli, points)
+    curv = vmap(real_to_complex)(ricci_curvature_amb_real(model, params, projective_factors, k_moduli, poly, points))
 
     return curv
 
-ricci_curvature_amb = jit(ricci_curvature_amb, static_argnums=(0,2,))
+ricci_curvature_amb = jit(ricci_curvature_amb, static_argnums=(0,2,4,))
 
 def ricci_curvature(model, params,projective_factors,k_moduli, poly, pts):
     """
@@ -338,9 +341,36 @@ def ricci_curvature(model, params,projective_factors,k_moduli, poly, pts):
         This is memory intensive, as it uses ricci_curvature_amb...
     """
 
-    curv = ricci_curvature_amb(model, params,projective_factors,k_moduli, pts)
+    curv = ricci_curvature_amb(model, params,projective_factors,k_moduli, poly, pts)
     pullbacks = get_pullback(pts,projective_factors,poly)
 
     return jnp.einsum('aij,ajk,alk->ail',pullbacks,curv,jnp.conjugate(pullbacks))
 
 ricci_curvature = jit(ricci_curvature, static_argnums=(0,2,4,))
+
+def ricci_scalar(model, params,projective_factors,k_moduli, poly, pts):
+    """
+    Calculate the Ricci curvature for a given model and parameters.
+    Args:
+        model: The model used for the calculation.
+        params: Parameters of the model.
+        projective_factors (tuple): Factors related to the projective space.
+        k_moduli: Moduli parameters.
+        poly: Polynomial defining the Calabi-Yau manifold.
+        pts: Points at which to evaluate the curvature.
+    Returns:
+        The Ricci curvature tensor at the given points.
+    Note:
+        This is memory intensive, as it uses ricci_curvature_amb...
+    """
+
+    curv = ricci_curvature(model, params,projective_factors,k_moduli, poly, pts)
+
+    metric = cy_metric(model, params,projective_factors,k_moduli, poly, pts)
+
+    inv_met = vmap(jnp.linalg.inv,in_axes=0)(metric)
+
+    return jnp.einsum('aij,aji->a',inv_met,curv)
+
+ricci_scalar = jit(ricci_scalar, static_argnums=(0,2,4,))
+

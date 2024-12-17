@@ -16,7 +16,7 @@ class FuncQuintic(nn.Module):
 
     kap = jnp.sum(jnp.square(xR) + jnp.square(xI))
 
-    x = jnp.array( 
+    y = jnp.array( 
       [
         xR[0]*xR[1] - xI[0]*xI[1], xR[0]*xI[1],
         xR[0]*xR[2] - xI[0]*xI[2], xR[0]*xI[2],
@@ -31,14 +31,14 @@ class FuncQuintic(nn.Module):
 
       ])/kap
     
-    x = self.dense1(x)
-    x = x**2.
-    x = self.dense2(x)
-    x = x**2.
-    x = self.dense3(x)
-    x = x**2.
-    x = self.dense4(x)
-    return x.squeeze()
+    y = self.dense1(y)
+    y = nn.gelu(y)
+    y = self.dense2(y)
+    y = nn.gelu(y)
+    y = self.dense3(y)
+    y = nn.gelu(y)
+    y = self.dense4(y)
+    return y.squeeze()
   
   # Define the model
 class FuncTQ(nn.Module):
@@ -50,8 +50,8 @@ class FuncTQ(nn.Module):
 
   def __call__(self, x):
 
-    xR = x[0]
-    xI = x[1]
+    xR = x[...,0,:]
+    xI = x[...,0,:]
 
     kap = jnp.sqrt(jnp.array([jnp.sum(jnp.square(xR[0]) + jnp.square(xI[0])),jnp.sum(jnp.square(xR[0]) + jnp.square(xI[0])),
                                 jnp.sum(jnp.square(xR[1]) + jnp.square(xI[1])),jnp.sum(jnp.square(xR[1]) + jnp.square(xI[1])),
@@ -92,11 +92,11 @@ class FuncTQ(nn.Module):
       xR[6]*xR[7] - xI[6]*xI[7], xR[6]*xI[7]
       ])
     
-    x = self.dense1(x)
-    x = x**2.
-    x = self.dense2(x)
-    x = x**2.
-    x = self.dense3(x)
-    x = x**2.
-    x = self.dense4(x)
-    return x.squeeze()
+    y = self.dense1(y)
+    y = nn.gelu(y)
+    y = self.dense2(y)
+    y = nn.gelu(y)
+    y = self.dense3(y)
+    y = nn.gelu(y)
+    y = self.dense4(y)
+    return y.squeeze()
