@@ -69,7 +69,7 @@ def grad_del_real(func,X):
 
     return jnp.array([(dFx[0,0] + dFx[1,1]), -(dFx[0,1] - dFx[1,0])])/2.
 
-#grad_del_real = jit(grad_del_real, static_argnums=(0,))
+grad_del_real = jit(grad_del_real, static_argnums=(0,))
 
 def grad_delBar(func, z):
     """
@@ -151,11 +151,13 @@ def grad_del_delBar_real(func, X):
 
     def localDel(func, pt):
         dFx = jax.jacrev(func)(pt)
-        return jnp.array([(dFx[0,:,0] + dFx[1,:,1]), (dFx[0,:,1] - dFx[1,:,0])])/2.
+        return jnp.array([(dFx[0,:,0] + dFx[1,:,1]), -(dFx[0,:,1] - dFx[1,:,0])])/2.
 
     delDelBar = localDel(delBarFunc, X)
 
     return delDelBar
+
+grad_del_delBar_real = jit(grad_del_delBar_real, static_argnums=(0,))
 
 @jax.jit
 def manual_det_3x3(M):

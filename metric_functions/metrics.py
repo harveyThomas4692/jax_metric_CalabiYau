@@ -206,11 +206,8 @@ def cy_metric_amb(model, params,projective_factors,k_moduli, pts):
     """
     
     phi = lambda pt: apply_model(model,params,pt)
-
-    #points = vmap(complex_to_real)(pts)
     
     gradDelDelBarPhi = vmap(grad_del_delBar,in_axes=(None,0,))(phi,pts)
-
 
     gFS = get_2form_FS_proj_prod(projective_factors,k_moduli, pts)
 
@@ -218,7 +215,33 @@ def cy_metric_amb(model, params,projective_factors,k_moduli, pts):
 
     return gAmb
 
-#cy_metric_amb = jit(cy_metric_amb, static_argnums=(0,2,))
+cy_metric_amb = jit(cy_metric_amb, static_argnums=(0,2,))
+
+def cy_metric_amb_real(model, params,projective_factors,k_moduli, pts):
+    """
+    Computes the Calabi-Yau metric with an ambiguity term.
+    Args:
+        model: The model used to compute the metric.
+        params: Parameters for the model.
+        projective_factors (tuple): Tuple of projective factors.
+        k_moduli (array-like): Array of Kähler moduli.
+        pts (array-like): Points at which to evaluate the metric.
+    Returns:
+        array-like: The computed Calabi-Yau metric with the ambiguity term.
+    """
+    
+    phi = lambda pt: apply_model_real(model,params,pt)
+    
+    gradDelDelBarPhi = vmap(grad_del_delBar_real,in_axes=(None,0,))(phi,pts)
+
+    points = vmap(real_to_complex)(pts)
+    gFS = get_2form_FS_proj_prod(projective_factors,k_moduli, points)
+
+    gAmb = vmap(complex_to_real)(gFS) + gradDelDelBarPhi
+
+    return gAmb
+
+cy_metric_amb_real = jit(cy_metric_amb_real, static_argnums=(0,2,))
 
 def cy_metric(model, params,projective_factors,k_moduli, poly, pts):
     """
@@ -233,13 +256,44 @@ def cy_metric(model, params,projective_factors,k_moduli, poly, pts):
     Returns:
         A tensor representing the Calabi-Yau metric at the given points.
     """
+    points = vmap(complex_to_real)(pts)
 
-    gAmb = cy_metric_amb(model, params,projective_factors,k_moduli, pts)
+    gAmb = vmap(real_to_complex)(cy_metric_amb_real(model, params,projective_factors,k_moduli, points))
     pullbacks = get_pullback(pts,projective_factors,poly)
 
     return jnp.einsum('aij,ajk,alk->ail',pullbacks,gAmb,jnp.conjugate(pullbacks))
 
 cy_metric = jit(cy_metric, static_argnums=(0,2,4,))
+
+def ricci_curvature_amb_real(model, params, projective_factors, k_moduli, pts):
+    """
+    Calculate the Ricci curvature for a given model and parameters.
+    Parameters:
+    model : object
+        The model representing the Calabi-Yau manifold.
+    params : array-like
+        Parameters for the model.
+    projective_factors (tuple) : array-like
+        Projective factors for the coordinates.
+    k_moduli : array-like
+        Kähler moduli parameters.
+    pts : array-like
+        Points at which to evaluate the Ricci curvature.
+    Returns:
+    array-like
+        The Ricci curvature evaluated at the given points.
+    Note: 
+        This is very memory intensive when it is first used
+    """
+    def log_det_met(pt):
+        g = cy_metric_amb_real(model, params,projective_factors,k_moduli, jnp.array([pt]))[0]
+        return jnp.abs(manual_det_3x3(g))
+    
+    curv = vmap(grad_del_delBar_real,in_axes=(None,0,))(log_det_met,pts)
+
+    return curv
+
+ricci_curvature_amb_real = jit(ricci_curvature_amb_real, static_argnums=(0,2,))
 
 def ricci_curvature_amb(model, params, projective_factors, k_moduli, pts):
     """
@@ -259,14 +313,10 @@ def ricci_curvature_amb(model, params, projective_factors, k_moduli, pts):
     array-like
         The Ricci curvature evaluated at the given points.
     Note: 
-        This is very slow right now. It is not used in the training process.
-        I'm not sure why it is so slow...
+        This is very memory intesisive when it is first used
     """
-    def log_det_met(pt):
-        g = cy_metric_amb(model, params,projective_factors,k_moduli, jnp.array([pt]))[0]
-        return jnp.abs(manual_det_3x3(g))
-    
-    curv = vmap(grad_del_delBar,in_axes=(None,0,))(log_det_met,pts)
+    points = vmap(complex_to_real)(pts)
+    curv = ricci_curvature_amb_real(model, params, projective_factors, k_moduli, points)
 
     return curv
 
@@ -285,7 +335,7 @@ def ricci_curvature(model, params,projective_factors,k_moduli, poly, pts):
     Returns:
         The Ricci curvature tensor at the given points.
     Note:
-        This is currently stupidly slow, as it uses ricci_curvature_amb...
+        This is memory intensive, as it uses ricci_curvature_amb...
     """
 
     curv = ricci_curvature_amb(model, params,projective_factors,k_moduli, pts)

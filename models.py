@@ -4,15 +4,15 @@ import jax.numpy as jnp
 # Define the model
 class FuncQuintic(nn.Module):
   def setup(self):
-    self.dense1 = nn.Dense(features=32,param_dtype=jnp.float64)
-    self.dense2 = nn.Dense(features=32,param_dtype=jnp.float64)
-    self.dense3 = nn.Dense(features=32,param_dtype=jnp.float64)
+    self.dense1 = nn.Dense(features=64,param_dtype=jnp.float64)
+    self.dense2 = nn.Dense(features=64,param_dtype=jnp.float64)
+    self.dense3 = nn.Dense(features=64,param_dtype=jnp.float64)
     self.dense4 = nn.Dense(features=1,use_bias=False,param_dtype=jnp.float64)
 
   def __call__(self, x):
 
-    xR = x[0]
-    xI = x[1]
+    xR = x[...,0,:]
+    xI = x[...,1,:]
 
     kap = jnp.sum(jnp.square(xR) + jnp.square(xI))
 
@@ -38,7 +38,7 @@ class FuncQuintic(nn.Module):
     x = self.dense3(x)
     x = x**2.
     x = self.dense4(x)
-    return jnp.log(jnp.abs(x.squeeze()))
+    return x.squeeze()
   
   # Define the model
 class FuncTQ(nn.Module):
@@ -99,4 +99,4 @@ class FuncTQ(nn.Module):
     x = self.dense3(x)
     x = x**2.
     x = self.dense4(x)
-    return jnp.log(jnp.abs(x.squeeze()))
+    return x.squeeze()
