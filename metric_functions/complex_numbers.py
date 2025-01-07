@@ -56,9 +56,9 @@ grad_del = jit(grad_del, static_argnums=(0,))
 
 def grad_del_real(func,X):
     """
-    Computes the gradient of a real-valued function with respect to the real part of a complex variable.
+    Computes the gradient of a real-formatted function with respect to the real-formated complex variable.
     Args:
-        func (callable): A function that takes a complex variable and returns a real value.
+        func (callable): A function that takes a complex variable and returns a real-formatted.
         X (array-like): A 2-element array representing the real and imaginary parts of the complex variable.
     Returns:
         jnp.ndarray: A 2-element array containing the gradient of the function with respect to the real part of the complex variable.
@@ -155,7 +155,7 @@ def grad_del_delBar_real(func, X):
 
     delDelBar = localDel(delBarFunc, X)
 
-    return delDelBar
+    return jnp.matrix_transpose(delDelBar)
 
 grad_del_delBar_real = jit(grad_del_delBar_real, static_argnums=(0,))
 

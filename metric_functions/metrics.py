@@ -17,7 +17,7 @@ def get_2form_FS_proj(n,pts):
         jax.numpy.ndarray: An array of Fubini-Study 2-forms corresponding to each input point.
     """
 
-    g = vmap(lambda pt: (jnp.identity(n+1)*(jnp.linalg.norm(pt)**2.) - jnp.outer(jnp.conjugate(pt),pt))/(jnp.linalg.norm(pt)**4.))(pts)
+    g = (1./jnp.pi)*vmap(lambda pt: (jnp.identity(n+1)*(jnp.linalg.norm(pt)**2.) - jnp.outer(jnp.conjugate(pt),pt))/(jnp.linalg.norm(pt)**4.))(pts)
 
     return g
 
@@ -121,8 +121,8 @@ def aux_weight(projective_factors,k_moduli, poly, pts):
         array-like: The computed auxiliary weights.
     """
 
-    gCY = get_ref_metric(projective_factors,k_moduli,poly,pts)
-    dets = jnp.abs(vmap(manual_det_3x3)(gCY))
+    g_ref = get_ref_metric(projective_factors,k_moduli,poly,pts)
+    dets = jnp.abs(vmap(manual_det_3x3)(g_ref))
     return dets
 
 aux_weight = jax.jit(aux_weight, static_argnums=(0,2,))
@@ -185,16 +185,17 @@ def kappa(projective_factors,k_moduli, poly, pts):
     Returns:
     float: The computed kappa value, which is the ratio of the sum of auxiliary weights to the sum of the Calabi-Yau volume form.
     """
-    cy_vol = cy_vol_form(projective_factors,poly,pts)
-    Wfs = aux_weight(projective_factors,k_moduli,poly,pts)
+    masses = mass(projective_factors, k_moduli, poly, pts)
+    sample_weight = aux_weight(projective_factors,k_moduli,poly,pts)
+    fs_weight = aux_weight(projective_factors,k_moduli,poly,pts)
 
-    return jnp.sum(Wfs)/jnp.sum(cy_vol)
+    return jnp.sum(fs_weight/sample_weight)/jnp.sum(masses)
 
 kappa = jit(kappa, static_argnums=(0,2,))
 
 def cy_metric_amb(model, params,projective_factors,k_moduli, pts):
     """
-    Computes the Calabi-Yau metric with an ambiguity term.
+    Computes the Calabi-Yau metric in ambient sapce.
     Args:
         model: The model used to compute the metric.
         params: Parameters for the model.
@@ -202,7 +203,7 @@ def cy_metric_amb(model, params,projective_factors,k_moduli, pts):
         k_moduli (array-like): Array of Kähler moduli.
         pts (array-like): Points at which to evaluate the metric.
     Returns:
-        array-like: The computed Calabi-Yau metric with the ambiguity term.
+        array-like: The computed Calabi-Yau metric.
     """
     
     phi = lambda pt: apply_model(model,params,pt)
@@ -219,7 +220,7 @@ cy_metric_amb = jit(cy_metric_amb, static_argnums=(0,2,))
 
 def cy_metric_amb_real(model, params,projective_factors,k_moduli, pts):
     """
-    Computes the Calabi-Yau metric with an ambiguity term.
+    Computes the Calabi-Yau metric with in ambient space.
     Args:
         model: The model used to compute the metric.
         params: Parameters for the model.
@@ -227,7 +228,7 @@ def cy_metric_amb_real(model, params,projective_factors,k_moduli, pts):
         k_moduli (array-like): Array of Kähler moduli.
         pts (array-like): Points at which to evaluate the metric.
     Returns:
-        array-like: The computed Calabi-Yau metric with the ambiguity term.
+        array-like: The computed Calabi-Yau metric .
     """
     
     phi = lambda pt: apply_model_real(model,params,pt)

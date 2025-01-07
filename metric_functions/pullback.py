@@ -23,7 +23,8 @@ def __pullback(pt, projective_factors, poly):
 
     # Delete the specified rows
     rm_index = jnp.argsort(jnp.abs(dP_compare))[-1]
-    chain = jnp.einsum('i,j->ij',dP, 1./dP)
+    # NOTE: Double check this sign. This seems to match with cy-metric
+    chain = -jnp.einsum('i,j->ij',dP, 1./dP)
 
     # Update the desired column with zeros and ones
     pb = jnp.eye(len(pt),dtype=pt.dtype)

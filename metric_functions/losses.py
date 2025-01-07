@@ -2,7 +2,7 @@ from jax import jit, vmap
 import jax.numpy as jnp
 
 from metric_functions.complex_numbers import manual_det_3x3
-from metric_functions.metrics import cy_vol_form, cy_metric, aux_weight
+from metric_functions.metrics import cy_vol_form, cy_metric, normalised_mass
 
 def loss_ma(model, params,projective_factors,k_moduli, poly,kappa_val, pts):
     """
@@ -25,7 +25,6 @@ def loss_ma(model, params,projective_factors,k_moduli, poly,kappa_val, pts):
 
     omg = cy_vol_form(projective_factors,poly,pts)
     
-
     return jnp.mean(jnp.abs(1.- (det/(kappa_val*omg))))
 
 loss_ma = jit(loss_ma,static_argnums=(0,2,4,))
@@ -50,8 +49,9 @@ def sigma_measure(model, params,projective_factors,k_moduli, poly,kappa_val, pts
     det = vmap(manual_det_3x3)(cy_metric(model, params,projective_factors,k_moduli, poly, pts))
 
     omg = cy_vol_form(projective_factors,poly,pts)
+    normalised_weights = normalised_mass(projective_factors, k_moduli, poly, pts)
     
+    return jnp.mean(normalised_weights*jnp.abs(1.- ((det)/(kappa_val*omg))))
 
-    return jnp.mean(jnp.abs(1.- ((kappa_val*omg)/det)))
 
 sigma_measure = jit(sigma_measure,static_argnums=(0,2,4,))
