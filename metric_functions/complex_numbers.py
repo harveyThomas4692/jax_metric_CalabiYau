@@ -5,7 +5,7 @@ from jax import jit
 @jit
 def complex_to_real(z):
     """
-    Converts a complex number to a real-valued array.
+    Converts a complex number to a real-form.
     Parameters:
     z (complex): A complex number.
     Returns:
@@ -18,7 +18,7 @@ def complex_to_real(z):
 @jit
 def real_to_complex(x):
     """
-    Converts a real-valued array to a complex number.
+    Converts a real-form representation of a complex number to a complex number.
     Parameters:
     x (jnp.array): A 1D array with two elements, where the first element is the real part and the second element is the imaginary part.
     Returns:

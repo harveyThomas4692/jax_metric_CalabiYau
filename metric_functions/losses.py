@@ -6,9 +6,9 @@ from metric_functions.metrics import cy_vol_form, cy_metric, normalised_mass
 
 def loss_ma(model, params,projective_factors,k_moduli, poly,kappa_val, pts):
     """
-    Computes the mean absolute loss for a given model.
+    Computes the Monge-Ampere loss for a given model.
     This function calculates the loss by comparing the determinant of the 
-    Calabi-Yau metric to the product of the volume form.
+    Calabi-Yau metric to the CY volume form.
     Parameters:
     model (callable): The model used to compute the metric.
     params (dict): Parameters for the model.

@@ -106,7 +106,7 @@ def cy_vol_form(projective_factors,poly,pts):
 
 cy_vol_form = jit(cy_vol_form,static_argnums=(0,1))
 
-def aux_weight(projective_factors,k_moduli, poly, pts):
+def sample_weight(projective_factors,k_moduli, poly, pts):
     """
     Compute auxiliary weights for given projective factors, moduli, polynomial, and points.
     This function calculates the auxiliary weights by first obtaining the reference metric
@@ -125,11 +125,29 @@ def aux_weight(projective_factors,k_moduli, poly, pts):
     dets = jnp.abs(vmap(manual_det_3x3)(g_ref))
     return dets
 
-aux_weight = jax.jit(aux_weight, static_argnums=(0,2,))
+sample_weight = jax.jit(sample_weight, static_argnums=(0,2,))
 
-def mass(projective_factors,k_moduli, poly, pts):
+def fs_det(projective_factors,k_moduli, poly, pts):
     """
-    Calculate the masses for numer integration given the projective factors, 
+    Compute the det of the FS metric for given projective factors, moduli, polynomial, and points.
+    Args:
+        projective_factors (tuple): The projective factors used in the computation.
+        k_moduli (array-like): The moduli parameters.
+        poly (array-like): The polynomial coefficients or terms.
+        pts (array-like): The points at which the metric is evaluated.
+    Returns:
+        array-like: The computed Fubini-Study determinants.
+    """
+
+    g_ref = get_ref_metric(projective_factors,k_moduli,poly,pts)
+    dets = jnp.abs(vmap(manual_det_3x3)(g_ref))
+    return dets
+
+fs_det = jax.jit(fs_det, static_argnums=(0,2,))
+
+def hol_vol_weights(projective_factors,k_moduli, poly, pts):
+    """
+    Calculate the weights for Omg^barOmg for numerical integration given the projective factors, 
     Kähler moduli, polynomial, and points.
     Args:
         projective_factors (tuple): The projective factors of the manifold.
@@ -137,18 +155,19 @@ def mass(projective_factors,k_moduli, poly, pts):
         poly (array-like): The polynomial defining the manifold.
         pts (array-like): The points at which to evaluate the mass.
     Returns:
-        float: The mass of the Calabi-Yau manifold at the given points.
+        float: The weights for Omg^barOmg of the Calabi-Yau manifold at the given points.
     """
 
-    weights = aux_weight(projective_factors,k_moduli,poly,pts)
+    weights = sample_weight(projective_factors,k_moduli,poly,pts)
     cy_vol_form_pts = cy_vol_form(projective_factors,poly,pts)
     return cy_vol_form_pts/weights
 
-mass = jit(mass, static_argnums=(0,2,))
+hol_vol_weights = jit(hol_vol_weights, static_argnums=(0,2,))
 
 def normalised_mass(projective_factors,k_moduli, poly, pts):
     """
-    Compute the normalized mass for given projective factors, Kähler moduli, polynomial, and points.
+    Compute the normalised mass (i.e. the weights for the CY manifold when the volume is normalised to 1)
+    for given projective factors,Kähler moduli, polynomial, and points.
     This function calculates the masses using the provided projective factors, Kähler moduli, polynomial, 
     and points, then normalizes these masses by the total volume form of the Calabi-Yau manifold.
     Args:
@@ -157,12 +176,12 @@ def normalised_mass(projective_factors,k_moduli, poly, pts):
         poly (array-like): The polynomial defining the Calabi-Yau manifold.
         pts (array-like): The points at which the computation is performed.
     Returns:
-        array-like: The normalized masses.
+        array-like: The normalised masses.
     Note:
         This is computing what are called auxiliary weights in the CY metric paper.
     """
 
-    masses = mass(projective_factors,k_moduli,poly,pts)
+    masses = hol_vol_weights(projective_factors,k_moduli,poly,pts)
     cy_vol = cy_vol_form(projective_factors,poly,pts)
 
     mTot = jnp.sum(masses)
@@ -185,11 +204,11 @@ def kappa(projective_factors,k_moduli, poly, pts):
     Returns:
     float: The computed kappa value, which is the ratio of the sum of auxiliary weights to the sum of the Calabi-Yau volume form.
     """
-    masses = mass(projective_factors, k_moduli, poly, pts)
-    sample_weight = aux_weight(projective_factors,k_moduli,poly,pts)
-    fs_weight = aux_weight(projective_factors,k_moduli,poly,pts)
+    hol_weight = hol_vol_weights(projective_factors, k_moduli, poly, pts)
+    sample_wt = sample_weight(projective_factors,k_moduli,poly,pts)
+    fs_weight = fs_det(projective_factors,k_moduli,poly,pts)
 
-    return jnp.sum(fs_weight/sample_weight)/jnp.sum(masses)
+    return jnp.sum(fs_weight/sample_wt)/jnp.sum(hol_weight)
 
 kappa = jit(kappa, static_argnums=(0,2,))
 
