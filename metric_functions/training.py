@@ -18,7 +18,7 @@ def apply_model(model, params, x):
     y = complex_to_real(x)
     return model.apply(params, y)
 
-#apply_model = jit(apply_model,static_argnums=(0,))
+apply_model = jit(apply_model,static_argnums=(0,))
 
 def apply_model_real(model, params, x):
     """
@@ -33,4 +33,4 @@ def apply_model_real(model, params, x):
 
     return jnp.array([model.apply(params, x),0.])
 
-#apply_model_real = jit(apply_model_real,static_argnums=(0,))
+apply_model_real = jit(apply_model_real,static_argnums=(0,))

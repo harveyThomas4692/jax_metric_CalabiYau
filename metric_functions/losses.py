@@ -51,7 +51,7 @@ def sigma_measure(model, params,projective_factors,k_moduli, poly,kappa_val, pts
     omg = cy_vol_form(projective_factors,poly,pts)
     normalised_weights = normalised_mass(projective_factors, k_moduli, poly, pts)
     
-    return jnp.mean(normalised_weights*jnp.abs(1.- ((det)/(kappa_val*omg))))
+    return jnp.sum(normalised_weights*jnp.abs(1.- ((det)/(kappa_val*omg))))
 
 
 sigma_measure = jit(sigma_measure,static_argnums=(0,2,4,))

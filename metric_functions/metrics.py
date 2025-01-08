@@ -166,9 +166,9 @@ def normalised_mass(projective_factors,k_moduli, poly, pts):
     cy_vol = cy_vol_form(projective_factors,poly,pts)
 
     mTot = jnp.sum(masses)
-    omgTot = jnp.sum(cy_vol)
+    #omgTot = jnp.sum(cy_vol)
 
-    return masses * omgTot / mTot
+    return masses / mTot
 
 normalised_mass = jit(normalised_mass, static_argnums=(0,2,))
 

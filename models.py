@@ -27,9 +27,11 @@ class FuncQuintic(nn.Module):
         xR[1]*xR[4] + xI[1]*xI[4], xR[1]*xI[4] - xI[1]*xR[4],
         xR[2]*xR[3] + xI[2]*xI[3], xR[2]*xI[3] - xI[2]*xR[3],
         xR[2]*xR[4] + xI[2]*xI[4], xR[2]*xI[4] - xI[2]*xR[4],
-        xR[3]*xR[4] + xI[3]*xI[4], xR[3]*xI[4] - xI[3]*xR[4]
-
-      ])/kap
+        xR[3]*xR[4] + xI[3]*xI[4], xR[3]*xI[4] - xI[3]*xR[4],
+        xR[0]*xR[0] + xI[0]*xI[0], xR[1]*xR[1] + xI[1]*xI[1],
+        xR[2]*xR[2] + xI[2]*xI[2], xR[3]*xR[3] + xI[3]*xI[3],
+        xR[4]*xR[4] + xI[4]*xI[4]
+])/kap
     
     y = self.dense1(y)
     y = nn.gelu(y)
