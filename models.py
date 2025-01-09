@@ -7,7 +7,7 @@ class FuncQuintic(nn.Module):
     self.dense1 = nn.Dense(features=64,param_dtype=jnp.float64)
     self.dense2 = nn.Dense(features=64,param_dtype=jnp.float64)
     self.dense3 = nn.Dense(features=64,param_dtype=jnp.float64)
-    self.dense4 = nn.Dense(features=1,use_bias=False,param_dtype=jnp.float64)
+    self.dense_end = nn.Dense(features=1,use_bias=False,param_dtype=jnp.float64)
 
   def __call__(self, x):
 
@@ -31,7 +31,7 @@ class FuncQuintic(nn.Module):
         xR[0]*xR[0] + xI[0]*xI[0], xR[1]*xR[1] + xI[1]*xI[1],
         xR[2]*xR[2] + xI[2]*xI[2], xR[3]*xR[3] + xI[3]*xI[3],
         xR[4]*xR[4] + xI[4]*xI[4]
-])/kap
+      ])/kap
     
     y = self.dense1(y)
     y = nn.gelu(y)
@@ -39,7 +39,7 @@ class FuncQuintic(nn.Module):
     y = nn.gelu(y)
     y = self.dense3(y)
     y = nn.gelu(y)
-    y = self.dense4(y)
+    y = self.dense_end(y)
     return y.squeeze()
   
   
