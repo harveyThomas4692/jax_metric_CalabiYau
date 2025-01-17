@@ -44,7 +44,7 @@ class FuncQuintic(nn.Module):
   
   
   # Define the model
-class ConstFuncQuintic(nn.Module):
+class ConstFunc(nn.Module):
   def setup(self):
     self.dense1 = nn.Dense(features=1,param_dtype=jnp.float64)
 
@@ -64,13 +64,17 @@ class FuncTQ(nn.Module):
 
   def __call__(self, x):
 
-    xR = x[...,0,:]
-    xI = x[...,0,:]
+    xR = x[0]
+    xI = x[1]
 
-    kap = jnp.sqrt(jnp.array([jnp.sum(jnp.square(xR[0]) + jnp.square(xI[0]),axis=-1),jnp.sum(jnp.square(xR[0]) + jnp.square(xI[0]),axis=-1),
-                                jnp.sum(jnp.square(xR[1]) + jnp.square(xI[1]),axis=-1),jnp.sum(jnp.square(xR[1]) + jnp.square(xI[1]),axis=-1),
-                                jnp.sum(jnp.square(xR[2]) + jnp.square(xI[2]),axis=-1),jnp.sum(jnp.square(xR[2]) + jnp.square(xI[2]),axis=-1), 
-                                jnp.sum(jnp.square(xR[3]) + jnp.square(xI[3]),axis=-1),jnp.sum(jnp.square(xR[3]) + jnp.square(xI[3]),axis=-1)]))
+    kap = jnp.sqrt(jnp.array([jnp.square(xR[0]) + jnp.square(xI[0])+jnp.square(xR[1]) + jnp.square(xI[1]), 
+                              jnp.square(xR[0]) + jnp.square(xI[0])+jnp.square(xR[1]) + jnp.square(xI[1]),
+                              jnp.square(xR[2]) + jnp.square(xI[2])+jnp.square(xR[3]) + jnp.square(xI[3]), 
+                              jnp.square(xR[2]) + jnp.square(xI[2])+jnp.square(xR[3]) + jnp.square(xI[3]),
+                              jnp.square(xR[4]) + jnp.square(xI[4])+jnp.square(xR[5]) + jnp.square(xI[5]), 
+                              jnp.square(xR[4]) + jnp.square(xI[4])+jnp.square(xR[5]) + jnp.square(xI[5]), 
+                              jnp.square(xR[6]) + jnp.square(xI[6])+jnp.square(xR[7]) + jnp.square(xI[7]), 
+                              jnp.square(xR[6]) + jnp.square(xI[6])+jnp.square(xR[7]) + jnp.square(xI[7])]))
     xR = xR/kap
     xI = xI/kap
 

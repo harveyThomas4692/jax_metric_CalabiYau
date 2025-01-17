@@ -4,6 +4,8 @@ from jax import jit, vmap
 from metric_functions.pullback import get_pullback
 from metric_functions.complex_numbers import manual_det_3x3, grad_del_delBar,grad_del_delBar_real, complex_to_real, real_to_complex
 from metric_functions.training import apply_model, apply_model_real
+from itertools import permutations
+from jax import jit
 
 def get_2form_FS_proj(n,pts):
     """
@@ -46,6 +48,29 @@ def get_2form_FS_proj_prod(projective_factors, k_moduli, pts):
     return metric
 
 get_2form_FS_proj_prod = jit(get_2form_FS_proj_prod, static_argnums=(0,))
+
+def get_2form_FS_proj_prod_sep(projective_factors, k_moduli, pts):
+    """
+    Computes each Fubini-Study direct product metric for each given projective factors, moduli, and points.
+    Args:
+        projective_factors (tuple of int): List of projective factors for each block.
+        k_moduli (list of float): List of moduli corresponding to each projective factor.
+        pts (array-like): Array of points at which the metric is evaluated.
+    Returns:
+        jnp.ndarray: The computed 2-form Fubini-Study projection product metric, for each projective factor.
+    """
+
+    metric = jnp.zeros((len(pts),len(projective_factors),len(pts[0]),len(pts[0])))*(1.0+0.0j)
+    min = 0
+    for i in range(len(projective_factors)):
+        factor = projective_factors[i]
+        block = get_2form_FS_proj(projective_factors[i],pts[:,min:min+factor+1])
+        metric = k_moduli[i]*metric.at[:,i,min:min+factor+1, min:min+factor+1].set(block)
+        min += factor +1
+
+    return metric
+
+get_2form_FS_proj_prod_sep = jit(get_2form_FS_proj_prod_sep, static_argnums=(0,))
 
 def get_ref_metric(projective_factors,k_moduli, poly, pts):
     """
@@ -106,6 +131,57 @@ def cy_vol_form(projective_factors,poly,pts):
 
 cy_vol_form = jit(cy_vol_form,static_argnums=(0,1))
 
+def levi_civita(n):
+    """
+    Compute the Levi-Civita symbol for a given dimension.
+    Parameters:
+    n (int): The dimension of the Levi-Civita symbol.
+    Returns:
+    array-like: The Levi-Civita symbol for the given dimension.
+    """
+    # Create a zero array with shape (n, n, n)
+    symbol = jnp.zeros((n,) * n, dtype=int)
+
+    # Fill the array with the appropriate Levi-Civita values
+    for perm in permutations(range(n)):
+        # Calculate the sign of the permutation
+        sign = (-1) ** (sum(a>b for i, a in enumerate(perm) for b in perm[i+1:]))
+        indices = tuple(perm)
+        symbol = symbol.at[indices].set(sign)
+    
+    return symbol
+
+levi_civita = jit(levi_civita, static_argnums=(0,))
+
+@jit
+def _fold_1(gFSs_pb):
+   return jnp.einsum('xab->x', gFSs_pb[:, 0])
+
+
+@jit
+def _fold_2(gFSs_pb):
+    lc = levi_civita(2)
+    return jnp.einsum('xab,xcd,...ac,...bd->x', gFSs_pb[:, 0], gFSs_pb[:, 1], lc, lc)
+
+@jit
+def _fold_3(gFSs_pb):
+    lc = levi_civita(3)
+    return jnp.einsum('xab,xcd,xef,...ace,...bdf->x', gFSs_pb[:, 0], gFSs_pb[:, 1], gFSs_pb[:, 2], lc, lc)
+
+@jit
+def _fold_4(gFSs_pb):
+    lc = levi_civita(4)
+    return jnp.einsum('...xab,...xcd,...xef,...xgh,...aceg,...bdfh->...x', gFSs_pb[:, 0], gFSs_pb[:, 1], gFSs_pb[:, 2], gFSs_pb[:, 3], lc, lc)
+
+@jit
+def _fold_5(gFSs_pb):
+    lc = levi_civita(5)
+    return jnp.einsum('xab,xcd,xef,xgh,xij,...acegi,...bdfhj->x', gFSs_pb[:, 0], gFSs_pb[:, 1], gFSs_pb[:, 2], gFSs_pb[:, 3], gFSs_pb[:, 4], lc, lc)
+
+def _unsupported_fold():
+    print("Weights are only implemented for nfold <= 5. Run the tensor contraction yourself :).")
+    return 1.
+
 def sample_weight(projective_factors,k_moduli, poly, pts):
     """
     Compute auxiliary weights for given projective factors, moduli, polynomial, and points.
@@ -121,9 +197,43 @@ def sample_weight(projective_factors,k_moduli, poly, pts):
         array-like: The computed auxiliary weights.
     """
 
-    g_ref = get_ref_metric(projective_factors,k_moduli,poly,pts)
-    dets = jnp.abs(vmap(manual_det_3x3)(g_ref))
-    return dets
+    gFSs = get_2form_FS_proj_prod_sep(projective_factors,k_moduli,pts)
+    pullbacks = get_pullback(pts,projective_factors,poly)
+    gFSs_pb = jnp.einsum('aij,abjk,alk->abil',pullbacks,gFSs,jnp.conjugate(pullbacks))
+    nfold = gFSs_pb.shape[-1]
+    #lc = levi_civita(nfold)
+    lc = levi_civita(5)
+    # I hate this so much...
+    detg_norm = 1.0
+
+    # detg_norm = jax.lax.cond(nfold == 1, _fold_1, 
+    #                      lambda a,b: jax.lax.cond(nfold == 2, _fold_2, 
+    #                                         lambda a,b: jax.lax.cond(nfold == 3, _fold_3, 
+    #                                                            lambda a,b: jax.lax.cond(nfold == 4, _fold_4, 
+    #                                                                               lambda a,b: jax.lax.cond(nfold == 5, _fold_5, 
+    #                                                                                                  _unsupported_fold, gFSs_pb, nfold),
+    #                                                                               gFSs_pb,nfold), gFSs_pb,nfold),
+    #                                         gFSs_pb,nfold), gFSs_pb,nfold) * jax.scipy.special.factorial(nfold)
+
+    if nfold == 1:
+        detg_norm = _fold_1(gFSs_pb)
+    elif nfold == 2:
+        detg_norm = _fold_2(gFSs_pb)
+    elif nfold == 3:
+        detg_norm = _fold_3(gFSs_pb)
+    elif nfold == 4:
+        detg_norm = _fold_4(gFSs_pb)
+    elif nfold == 5:
+        detg_norm = _fold_5(gFSs_pb)
+    else:
+        detg_norm = _unsupported_fold()
+    
+    detg_norm /= jax.scipy.special.factorial(nfold)
+    
+    
+    # detg_norm = fs_det(projective_factors,k_moduli,poly,pts)
+
+    return detg_norm
 
 sample_weight = jax.jit(sample_weight, static_argnums=(0,2,))
 
@@ -182,7 +292,7 @@ def normalised_mass(projective_factors,k_moduli, poly, pts):
     """
 
     masses = hol_vol_weights(projective_factors,k_moduli,poly,pts)
-    cy_vol = cy_vol_form(projective_factors,poly,pts)
+    # cy_vol = cy_vol_form(projective_factors,poly,pts)
 
     mTot = jnp.sum(masses)
     #omgTot = jnp.sum(cy_vol)
