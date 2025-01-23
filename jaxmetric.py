@@ -4,3 +4,4 @@ import metric_functions.metrics as metrics
 import metric_functions.complex_numbers as complex_numbers
 import metric_functions.training as training
 import metric_functions.losses as losses
+import metric_functions.models as models
