@@ -80,34 +80,10 @@ class FuncTQ(nn.Module):
 
     y = jnp.array( 
       [
-      xR[0]*xR[1] + xI[0]*xI[1], xR[0]*xI[1] - xI[0]*xR[1],
-      xR[0]*xR[2] + xI[0]*xI[2], xR[0]*xI[2] - xI[0]*xR[2],
-      xR[0]*xR[3] + xI[0]*xI[3], xR[0]*xI[3] - xI[0]*xR[3],
-      xR[0]*xR[4] + xI[0]*xI[4], xR[0]*xI[4] - xI[0]*xR[4],
-      xR[0]*xR[5] + xI[0]*xI[5], xR[0]*xI[5] - xI[0]*xR[5],
-      xR[0]*xR[6] + xI[0]*xI[6], xR[0]*xI[6] - xI[0]*xR[6],
-      xR[0]*xR[7] + xI[0]*xI[7], xR[0]*xI[7] - xI[0]*xR[7],
-      xR[1]*xR[2] + xI[1]*xI[2], xR[1]*xI[2] - xI[1]*xR[2],
-      xR[1]*xR[3] + xI[1]*xI[3], xR[1]*xI[3] - xI[1]*xR[3],
-      xR[1]*xR[4] + xI[1]*xI[4], xR[1]*xI[4] - xI[1]*xR[4],
-      xR[1]*xR[5] + xI[1]*xI[5], xR[1]*xI[5] - xI[1]*xR[5],
-      xR[1]*xR[6] + xI[1]*xI[6], xR[1]*xI[6] - xI[1]*xR[6],
-      xR[1]*xR[7] + xI[1]*xI[7], xR[1]*xI[7] - xI[1]*xR[7],
-      xR[2]*xR[3] + xI[2]*xI[3], xR[2]*xI[3] - xI[2]*xR[3],
-      xR[2]*xR[4] + xI[2]*xI[4], xR[2]*xI[4] - xI[2]*xR[4],
-      xR[2]*xR[5] + xI[2]*xI[5], xR[2]*xI[5] - xI[2]*xR[5],
-      xR[2]*xR[6] + xI[2]*xI[6], xR[2]*xI[6] - xI[2]*xR[6],
-      xR[2]*xR[7] + xI[2]*xI[7], xR[2]*xI[7] - xI[2]*xR[7],
-      xR[3]*xR[4] + xI[3]*xI[4], xR[3]*xI[4] - xI[3]*xR[4],
-      xR[3]*xR[5] + xI[3]*xI[5], xR[3]*xI[5] - xI[3]*xR[5],
-      xR[3]*xR[6] + xI[3]*xI[6], xR[3]*xI[6] - xI[3]*xR[6],
-      xR[3]*xR[7] + xI[3]*xI[7], xR[3]*xI[7] - xI[3]*xR[7],
-      xR[4]*xR[5] + xI[4]*xI[5], xR[4]*xI[5] - xI[4]*xR[5],
-      xR[4]*xR[6] + xI[4]*xI[6], xR[4]*xI[6] - xI[4]*xR[6],
-      xR[4]*xR[7] + xI[4]*xI[7], xR[4]*xI[7] - xI[4]*xR[7],
-      xR[5]*xR[6] + xI[5]*xI[6], xR[5]*xI[6] - xI[5]*xR[6],
-      xR[5]*xR[7] + xI[5]*xI[7], xR[5]*xI[7] - xI[5]*xR[7],
-      xR[6]*xR[7] + xI[6]*xI[7], xR[6]*xI[7] - xI[6]*xR[7]
+      xR[0]*xR[1] + xI[0]*xI[1], xR[0]*xI[1] - xI[0]*xR[1], xR[0]*xR[0]+xI[0]*xI[0], xR[1]*xR[1]+xI[1]*xI[1],
+      xR[2]*xR[3] + xI[2]*xI[3], xR[2]*xI[3] - xI[2]*xR[3], xR[2]*xR[2]+xI[2]*xI[2], xR[3]*xR[3]+xI[3]*xI[3],
+      xR[4]*xR[5] + xI[4]*xI[5], xR[4]*xI[5] - xI[4]*xR[5], xR[4]*xR[4]+xI[4]*xI[4], xR[5]*xR[5]+xI[5]*xI[5],
+      xR[6]*xR[7] + xI[6]*xI[7], xR[6]*xI[7] - xI[6]*xR[7], xR[6]*xR[6]+xI[6]*xI[6], xR[7]*xR[7]+xI[7]*xI[7]
       ])
     
     y = self.dense1(y)
