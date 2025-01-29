@@ -19,7 +19,7 @@ def get_2form_FS_proj(n,pts):
         jax.numpy.ndarray: An array of Fubini-Study 2-forms corresponding to each input point.
     """
 
-    g = (1./jnp.pi)*vmap(lambda pt: (jnp.identity(n+1)*(jnp.linalg.norm(pt)**2.) - jnp.outer(jnp.conjugate(pt),pt))/(jnp.linalg.norm(pt)**4.))(pts)
+    g = (1./(jnp.pi))*vmap(lambda pt: (jnp.identity(n+1)*(jnp.linalg.norm(pt)**2.) - jnp.outer(jnp.conjugate(pt),pt))/(jnp.linalg.norm(pt)**4.))(pts)
 
     return g
 
@@ -41,15 +41,15 @@ def get_2form_FS_proj_prod(projective_factors, k_moduli, pts):
     min = 0
     for i in range(len(projective_factors)):
         factor = projective_factors[i]
-        block = get_2form_FS_proj(projective_factors[i],pts[:,min:min+factor+1])
-        metric = k_moduli[i]*metric.at[:,min:min+factor+1, min:min+factor+1].set(block)
+        block = k_moduli[i]*get_2form_FS_proj(projective_factors[i],pts[:,min:min+factor+1])
+        metric = metric.at[:,min:min+factor+1, min:min+factor+1].set(block)
         min += factor +1
 
     return metric
 
 get_2form_FS_proj_prod = jit(get_2form_FS_proj_prod, static_argnums=(0,))
 
-def get_2form_FS_proj_prod_sep(projective_factors, k_moduli, pts):
+def get_2form_FS_proj_prod_sep(projective_factors, pts):
     """
     Computes each Fubini-Study direct product metric for each given projective factors, moduli, and points.
     Args:
@@ -65,7 +65,7 @@ def get_2form_FS_proj_prod_sep(projective_factors, k_moduli, pts):
     for i in range(len(projective_factors)):
         factor = projective_factors[i]
         block = get_2form_FS_proj(projective_factors[i],pts[:,min:min+factor+1])
-        metric = k_moduli[i]*metric.at[:,i,min:min+factor+1, min:min+factor+1].set(block)
+        metric = metric.at[:,i,min:min+factor+1, min:min+factor+1].set(block)
         min += factor +1
 
     return metric
@@ -99,7 +99,7 @@ def __cy_vol_form_point(projective_factors,poly,pt):
     poly (function): A polynomial function representing the Calabi-Yau manifold.
     pt (array-like): A point in the manifold where the volume form is evaluated.
     Returns:
-    float: The volume form at the given point.
+    float: The volume form at the given point. This is unormalised.
     """
 
     dPoly = jax.grad(poly,holomorphic=True)
@@ -124,10 +124,11 @@ def cy_vol_form(projective_factors,poly,pts):
         poly (array-like): The polynomial coefficients defining the Calabi-Yau manifold.
         pts (array-like): A collection of points at which to evaluate the volume form.
     Returns:s
-        array-like: The computed volume form at each point in `pts`.
+        array-like: The computed volume form at each point in `pts`. This is unormalised to volume 1
     """
+    vols = vmap(lambda pt: __cy_vol_form_point(projective_factors,poly,pt))(pts)
     
-    return vmap(lambda pt: __cy_vol_form_point(projective_factors,poly,pt))(pts)
+    return vols
 
 cy_vol_form = jit(cy_vol_form,static_argnums=(0,1))
 
@@ -161,22 +162,22 @@ def _fold_1(gFSs_pb):
 @jit
 def _fold_2(gFSs_pb):
     lc = levi_civita(2)
-    return jnp.einsum('xab,xcd,...ac,...bd->x', gFSs_pb[:, 0], gFSs_pb[:, 1], lc, lc)
+    return jnp.einsum('xab,xcd,...ac,...bd->x', gFSs_pb[0], gFSs_pb[1], lc, lc)
 
 @jit
 def _fold_3(gFSs_pb):
     lc = levi_civita(3)
-    return jnp.einsum('xab,xcd,xef,...ace,...bdf->x', gFSs_pb[:, 0], gFSs_pb[:, 1], gFSs_pb[:, 2], lc, lc)
+    return jnp.einsum('xab,xcd,xef,...ace,...bdf->x', gFSs_pb[0], gFSs_pb[1], gFSs_pb[2], lc, lc)
 
 @jit
 def _fold_4(gFSs_pb):
     lc = levi_civita(4)
-    return jnp.einsum('...xab,...xcd,...xef,...xgh,...aceg,...bdfh->...x', gFSs_pb[:, 0], gFSs_pb[:, 1], gFSs_pb[:, 2], gFSs_pb[:, 3], lc, lc)
+    return jnp.einsum('...xab,...xcd,...xef,...xgh,...aceg,...bdfh->...x', gFSs_pb[0], gFSs_pb[1], gFSs_pb[2], gFSs_pb[3], lc, lc)
 
 @jit
 def _fold_5(gFSs_pb):
     lc = levi_civita(5)
-    return jnp.einsum('xab,xcd,xef,xgh,xij,...acegi,...bdfhj->x', gFSs_pb[:, 0], gFSs_pb[:, 1], gFSs_pb[:, 2], gFSs_pb[:, 3], gFSs_pb[:, 4], lc, lc)
+    return jnp.einsum('xab,xcd,xef,xgh,xij,...acegi,...bdfhj->x', gFSs_pb[0], gFSs_pb[1], gFSs_pb[2], gFSs_pb[3], gFSs_pb[4], lc, lc)
 
 def _unsupported_fold():
     print("Weights are only implemented for nfold <= 5. Run the tensor contraction yourself :).")
@@ -197,34 +198,35 @@ def sample_weight(projective_factors,k_moduli, poly, pts):
         array-like: The computed auxiliary weights.
     """
 
-    gFSs = get_2form_FS_proj_prod_sep(projective_factors,k_moduli,pts)
+    all_omgs = jnp.array(projective_factors) - jnp.identity(len(projective_factors),dtype=int)[jnp.argmax(jnp.array(projective_factors))]
+    all_omgs = all_omgs.astype(int)
     pullbacks = get_pullback(pts,projective_factors,poly)
-    gFSs_pb = jnp.einsum('aij,abjk,alk->abil',pullbacks,gFSs,jnp.conjugate(pullbacks))
-    nfold = gFSs_pb.shape[-1]
-    #lc = levi_civita(nfold)
-    lc = levi_civita(5)
+
+    ts = jnp.zeros((3, len(all_omgs)))
+    j = 0
+    for i in range(len(projective_factors)):
+        for _ in range(all_omgs[i]):
+            ts = ts.at[j, i].add(1)
+            j += 1
+    fs_pbs = []
+    for t in ts:
+        gFSs = get_2form_FS_proj_prod(projective_factors, t, pts)
+        fs_pbs += [jnp.einsum('aij,ajk,alk->ail',pullbacks,gFSs,jnp.conjugate(pullbacks))]
+
+    nfold = pullbacks.shape[1]
     # I hate this so much...
     detg_norm = 1.0
 
-    # detg_norm = jax.lax.cond(nfold == 1, _fold_1, 
-    #                      lambda a,b: jax.lax.cond(nfold == 2, _fold_2, 
-    #                                         lambda a,b: jax.lax.cond(nfold == 3, _fold_3, 
-    #                                                            lambda a,b: jax.lax.cond(nfold == 4, _fold_4, 
-    #                                                                               lambda a,b: jax.lax.cond(nfold == 5, _fold_5, 
-    #                                                                                                  _unsupported_fold, gFSs_pb, nfold),
-    #                                                                               gFSs_pb,nfold), gFSs_pb,nfold),
-    #                                         gFSs_pb,nfold), gFSs_pb,nfold) * jax.scipy.special.factorial(nfold)
-
     if nfold == 1:
-        detg_norm = _fold_1(gFSs_pb)
+        detg_norm = _fold_1(fs_pbs)
     elif nfold == 2:
-        detg_norm = _fold_2(gFSs_pb)
+        detg_norm = _fold_2(fs_pbs)
     elif nfold == 3:
-        detg_norm = _fold_3(gFSs_pb)
+        detg_norm = _fold_3(fs_pbs)
     elif nfold == 4:
-        detg_norm = _fold_4(gFSs_pb)
+        detg_norm = _fold_4(fs_pbs)
     elif nfold == 5:
-        detg_norm = _fold_5(gFSs_pb)
+        detg_norm = _fold_5(fs_pbs)
     else:
         detg_norm = _unsupported_fold()
     
@@ -235,7 +237,7 @@ def sample_weight(projective_factors,k_moduli, poly, pts):
 
     return detg_norm
 
-sample_weight = jax.jit(sample_weight, static_argnums=(0,2,))
+#sample_weight = jax.jit(sample_weight, static_argnums=(0,2,))
 
 def fs_det(projective_factors,k_moduli, poly, pts):
     """
@@ -254,6 +256,9 @@ def fs_det(projective_factors,k_moduli, poly, pts):
     return dets
 
 fs_det = jax.jit(fs_det, static_argnums=(0,2,))
+
+#THIS IS A TEMP FIX!
+sample_weight = fs_det
 
 def hol_vol_weights(projective_factors,k_moduli, poly, pts):
     """

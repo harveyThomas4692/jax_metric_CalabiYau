@@ -7,6 +7,9 @@ class FuncQuintic(nn.Module):
     self.dense1 = nn.Dense(features=64,param_dtype=jnp.float64)
     self.dense2 = nn.Dense(features=64,param_dtype=jnp.float64)
     self.dense3 = nn.Dense(features=64,param_dtype=jnp.float64)
+    self.dense4 = nn.Dense(features=64,param_dtype=jnp.float64)
+    self.dense5 = nn.Dense(features=64,param_dtype=jnp.float64)
+    self.dense6 = nn.Dense(features=64,param_dtype=jnp.float64)
     self.dense_end = nn.Dense(features=1,use_bias=False,param_dtype=jnp.float64)
 
   def __call__(self, x):
@@ -39,6 +42,12 @@ class FuncQuintic(nn.Module):
     y = nn.gelu(y)
     y = self.dense3(y)
     y = nn.gelu(y)
+    y = self.dense4(y)
+    y = nn.gelu(y)
+    y = self.dense5(y)
+    y = nn.gelu(y)
+    y = self.dense6(y)
+    y = nn.gelu(y)
     y = self.dense_end(y)
     return y.squeeze()
   
@@ -60,7 +69,7 @@ class FuncTQ(nn.Module):
     self.dense1 = nn.Dense(features=32,param_dtype=jnp.float64)
     self.dense2 = nn.Dense(features=32,param_dtype=jnp.float64)
     self.dense3 = nn.Dense(features=32,param_dtype=jnp.float64)
-    self.dense4 = nn.Dense(features=1,use_bias=False,param_dtype=jnp.float64)
+    self.dense_end = nn.Dense(features=1,use_bias=False,param_dtype=jnp.float64)
 
   def __call__(self, x):
 
@@ -92,5 +101,5 @@ class FuncTQ(nn.Module):
     y = nn.gelu(y)
     y = self.dense3(y)
     y = nn.gelu(y)
-    y = self.dense4(y)
+    y = self.dense_end(y)
     return y.squeeze()
