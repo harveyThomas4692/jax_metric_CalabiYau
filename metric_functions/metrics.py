@@ -258,7 +258,7 @@ def fs_det(projective_factors,k_moduli, poly, pts):
 fs_det = jax.jit(fs_det, static_argnums=(0,2,))
 
 #THIS IS A TEMP FIX!
-sample_weight = fs_det
+#sample_weight = fs_det
 
 def hol_vol_weights(projective_factors,k_moduli, poly, pts):
     """
@@ -277,7 +277,7 @@ def hol_vol_weights(projective_factors,k_moduli, poly, pts):
     cy_vol_form_pts = cy_vol_form(projective_factors,poly,pts)
     return cy_vol_form_pts/weights
 
-hol_vol_weights = jit(hol_vol_weights, static_argnums=(0,2,))
+#hol_vol_weights = jit(hol_vol_weights, static_argnums=(0,2,))
 
 def normalised_mass(projective_factors,k_moduli, poly, pts):
     """
@@ -304,7 +304,7 @@ def normalised_mass(projective_factors,k_moduli, poly, pts):
 
     return masses / mTot
 
-normalised_mass = jit(normalised_mass, static_argnums=(0,2,))
+#normalised_mass = jit(normalised_mass, static_argnums=(0,2,))
 
 def kappa(projective_factors,k_moduli, poly, pts):
     """
@@ -325,7 +325,7 @@ def kappa(projective_factors,k_moduli, poly, pts):
 
     return jnp.sum(fs_weight/sample_wt)/jnp.sum(hol_weight)
 
-kappa = jit(kappa, static_argnums=(0,2,))
+#kappa = jit(kappa, static_argnums=(0,2,))
 
 def cy_metric_amb(model, params,projective_factors,k_moduli, pts):
     """
