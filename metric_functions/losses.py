@@ -21,7 +21,8 @@ def loss_ma(model, params,projective_factors,k_moduli, poly,kappa_val, pts):
     jnp.ndarray: The mean absolute loss value.
     """
 
-    det = vmap(manual_det_3x3)(cy_metric(model, params,projective_factors,k_moduli, poly, pts))
+    #det = vmap(manual_det_3x3)(cy_metric(model, params,projective_factors,k_moduli, poly, pts))
+    det = vmap(jnp.linalg.det)(cy_metric(model, params,projective_factors,k_moduli, poly, pts))
 
     omg = cy_vol_form(projective_factors,poly,pts)
     
@@ -45,8 +46,9 @@ def sigma_measure(model, params,projective_factors,k_moduli, poly,kappa_val, pts
     Returns:
     jnp.ndarray: The mean absolute loss value.
     """
-
-    det = vmap(manual_det_3x3)(cy_metric(model, params,projective_factors,k_moduli, poly, pts))
+    
+    #det = vmap(manual_det_3x3)(cy_metric(model, params,projective_factors,k_moduli, poly, pts))
+    det = vmap(jnp.linalg.det)(cy_metric(model, params,projective_factors,k_moduli, poly, pts))
 
     omg = cy_vol_form(projective_factors,poly,pts)
     normalised_weights = normalised_mass(projective_factors, k_moduli, poly, pts)

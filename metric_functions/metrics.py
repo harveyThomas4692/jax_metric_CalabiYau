@@ -123,7 +123,7 @@ def cy_vol_form(projective_factors,poly,pts):
         projective_factors (tuple): The projective factors used in the computation.
         poly (array-like): The polynomial coefficients defining the Calabi-Yau manifold.
         pts (array-like): A collection of points at which to evaluate the volume form.
-    Returns:s
+    Returns:
         array-like: The computed volume form at each point in `pts`. This is unormalised to volume 1
     """
     vols = vmap(lambda pt: __cy_vol_form_point(projective_factors,poly,pt))(pts)
@@ -252,7 +252,8 @@ def fs_det(projective_factors,k_moduli, poly, pts):
     """
 
     g_ref = get_ref_metric(projective_factors,k_moduli,poly,pts)
-    dets = jnp.abs(vmap(manual_det_3x3)(g_ref))
+    #dets = jnp.abs(vmap(manual_det_3x3)(g_ref))
+    dets = jnp.abs(vmap(jnp.linalg.det)(g_ref))
     return dets
 
 fs_det = jax.jit(fs_det, static_argnums=(0,2,))
@@ -423,9 +424,8 @@ def ricci_curvature_amb_real(model, params, projective_factors, k_moduli, poly, 
     def log_det_met(pt):
         point = jnp.array([real_to_complex(pt)])
         g = cy_metric(model, params, projective_factors ,k_moduli, poly, point)[0]
-        #print(complex_to_real(jnp.log(jnp.abs(manual_det_3x3(g)))))
-        return complex_to_real(jnp.log(jnp.abs(manual_det_3x3(g))))
-        #return jnp.log(jnp.abs(jnp.linalg.det(g)))  
+        #return complex_to_real(jnp.log(jnp.abs(manual_det_3x3(g))))
+        return complex_to_real(jnp.log(jnp.abs(jnp.linalg.det(g))))  
     
     curv = vmap(grad_del_delBar_real,in_axes=(None,0,))(log_det_met,pts)
 
