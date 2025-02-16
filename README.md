@@ -8,6 +8,7 @@ An example can be found in example.ipynb, which can be used to find the metric o
   <img src="Images/fs_scal.png" alt="|Ricci Scalar| for Fubini-Study Metric" width="300">
   <img src="Images/init_scal.png" alt="|Ricci Scalar| for Randomly Initialised Metric" width="300">
   <img src="Images/flat_scal.png" alt="|Ricci Scalar| for Ricci-flat Metric" width="300">
+  <img src="Images/Loss.png" alt="Monge-Ampere loss vs batch" width="300">
 </div>
 
 ## Using this for your own research
