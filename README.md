@@ -9,7 +9,7 @@ An example can be found in example.ipynb, which can be used to find the metric o
   <img src="Images/init_scal.png" alt="|Ricci Scalar| for Randomly Initialised Metric" width="300">
   <img src="Images/flat_scal.png" alt="|Ricci Scalar| for Ricci-flat Metric" width="300">
 </div>
-![Monge-Ampere loss vs batch](Images/loss)
+![Monge-Ampere loss vs batch](Images/loss.png)
 
 ## Using this for your own research
 This was written mostly for my own amusement, as I wanted something, unlike the alternatives, in a functional programming paradigm. My hope being that this would maximise clarity, over speed, for someone who is more familar with the mathematics than the computational methods. As such, I've used this when introducing mathematicians and physicists to numerical geomtry. For research purposes, I suggest useing either https://github.com/pythoncymetric/cymetric or https://github.com/Justin-Tan/cymyc which are both more generic.
